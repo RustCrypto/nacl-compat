@@ -37,5 +37,5 @@ jobs:
           components: clippy
           override: true
           profile: minimal
-      - run: cargo clippy --all --exclude crypto_box --all-features -- -D warnings
-
+      # TODO: add tests for features
+      - run: cargo clippy --all -- -D warnings
