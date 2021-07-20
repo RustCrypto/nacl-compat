@@ -12,6 +12,11 @@ Pure Rust implementation of APIs from [NaCl]-family libraries
 |----------------|-----------|---------------|------|
 | [`crypto_box`](https://github.com/RustCrypto/nacl-compat/tree/master/crypto_box) | [![crates.io](https://img.shields.io/crates/v/crypto_box.svg)](https://crates.io/crates/crypto_box) | [![Documentation](https://docs.rs/crypto_box/badge.svg)](https://docs.rs/crypto_box) | 1.49 |
 
+## MSRV Policy
+
+Minimum Supported Rust Version (MSRV) can be changed in the future, but it will be
+done with a minor version bump.
+
 ## License
 
 All crates licensed under either of
