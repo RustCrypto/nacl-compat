@@ -1,0 +1,26 @@
+[package]
+name = "crypto_secretstream"
+version = "0.1.0"
+description = """
+Pure Rust implementation of libsodium's crypto_secretstream secret-key using
+chacha20 and poly1305
+"""
+authors = ["C4DT", "RustCrypto Developers"]
+edition = "2018"
+license = "Apache-2.0 OR MIT"
+readme = "README.md"
+documentation = "https://docs.rs/crypto_secretstream"
+homepage = "https://github.com/RustCrypto/nacl-compat"
+repository = "https://github.com/RustCrypto/nacl-compat/tree/master/crypto_secretstream"
+categories = ["cryptography"]
+keywords = ["nacl", "libsodium", "public-key", "chacha20", "poly1305"]
+
+[dependencies]
+rand_core = "0.6"
+chacha20 = { version = "0.7", features = ["expose-core", "hchacha"] }
+poly1305 = "0.7"
+snafu = "0.6"
+
+[dev-dependencies]
+rand_core = { version = "0.6", features = ["std"] }
+sodiumoxide = "0.2"
