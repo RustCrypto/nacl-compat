@@ -2,5 +2,6 @@
 resolver = "2"
 members = [
     "crypto_box",
+    "crypto_kx",
     "crypto_secretstream",
 ]
