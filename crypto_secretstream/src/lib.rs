@@ -88,5 +88,5 @@ mod tags;
 
 pub use header::Header;
 pub use key::Key;
-pub use stream::{PullStream, PushStream};
+pub use stream::{PullStream, PushStream, Stream};
 pub use tags::Tag;

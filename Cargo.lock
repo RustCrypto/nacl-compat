@@ -127,11 +127,13 @@ dependencies = [
 name = "crypto_secretstream"
 version = "0.1.0"
 dependencies = [
+ "aead",
  "chacha20",
  "poly1305",
  "rand_core 0.6.3",
  "snafu",
  "sodiumoxide",
+ "subtle",
 ]
 
 [[package]]

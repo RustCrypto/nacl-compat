@@ -1,9 +1,14 @@
 use std::convert::TryFrom;
 
+use aead::{AeadCore, AeadInPlace};
 use chacha20::{
     cipher::{
         consts::U16,
-        generic_array::{functional::FunctionalSequence, sequence::Split, GenericArray},
+        generic_array::{
+            functional::FunctionalSequence,
+            sequence::{Concat, Split},
+            GenericArray,
+        },
         NewCipher, StreamCipher, StreamCipherSeek,
     },
     hchacha, ChaCha20, R20,
@@ -13,7 +18,7 @@ use poly1305::{
     Poly1305,
 };
 use rand_core::{CryptoRng, RngCore};
-use snafu::{ensure, OptionExt};
+use subtle::ConstantTimeEq;
 
 use super::nonce::Nonce;
 use crate::{header::Header, Key, Tag};
@@ -21,24 +26,19 @@ use crate::{header::Header, Key, Tag};
 const MAC_BLOCK_SIZE: usize = 16;
 const TAG_BLOCK_SIZE: usize = 16 * 4;
 
-#[derive(Debug, snafu::Snafu)]
-pub enum Error {
-    Crypto,
-}
+type Result<T> = std::result::Result<T, aead::Error>;
 
-type Result<T> = std::result::Result<T, Error>;
-
-/// Base struct for [`PushStream`] & [`PullStream`].
-///
-/// Mainly existing to avoid some code duplication.
-struct Stream {
+/// AEAD for libsodium's secretstream. Better to use [`PushStream`] & [`PullStream`] as theses
+/// take care of rekeying and computing the next nonce.
+pub struct Stream {
     key: chacha20::Key,
     nonce: Nonce,
     counter: u32,
 }
 
 impl Stream {
-    fn init(key: &Key, header: Header) -> Self {
+    /// Create a new [`Stream`].
+    pub fn init(key: &Key, header: Header) -> Self {
         let (hchacha20_nonce, nonce) = header.split();
 
         Self {
@@ -49,14 +49,16 @@ impl Stream {
     }
 
     /// Create a cipher and its related MAC key for the current round.
-    fn get_cipher_and_mac(&self) -> Result<(ChaCha20, poly1305::Key)> {
-        let mut cipher = ChaCha20::new(&self.key, &self.get_cipher_nonce());
+    fn get_cipher_and_mac(
+        &self,
+        cipher_nonce: &chacha20::Nonce,
+    ) -> Result<(ChaCha20, poly1305::Key)> {
+        let mut cipher = ChaCha20::new(&self.key, cipher_nonce);
 
         let mut mac_key = poly1305::Key::from([0u8; 32]);
         cipher
             .try_apply_keystream(mac_key.as_mut())
-            .ok()
-            .context(Crypto)?;
+            .map_err(|_| aead::Error)?;
 
         Ok((cipher, mac_key))
     }
@@ -121,12 +123,10 @@ impl Stream {
 
         cipher
             .try_apply_keystream(&mut self.key)
-            .ok()
-            .context(Crypto)?;
+            .map_err(|_| aead::Error)?;
         cipher
             .try_apply_keystream(&mut self.nonce)
-            .ok()
-            .context(Crypto)?;
+            .map_err(|_| aead::Error)?;
 
         self.counter = 1;
 
@@ -137,19 +137,7 @@ impl Stream {
     ///
     /// Used internally.
     fn get_cipher_nonce(&self) -> chacha20::Nonce {
-        debug_assert_eq!(
-            self.counter.to_le_bytes().len() + self.nonce.len(),
-            chacha20::Nonce::default().len()
-        );
-
-        chacha20::Nonce::from_exact_iter(
-            self.counter
-                .to_le_bytes()
-                .iter()
-                .copied()
-                .chain(self.nonce.into_iter()),
-        )
-        .unwrap()
+        GenericArray::from(self.counter.to_le_bytes()).concat(self.nonce)
     }
 }
 
@@ -159,7 +147,7 @@ pub struct PushStream(Stream);
 impl PushStream {
     /// Create a new stream for sending messages with a preshared key.
     ///
-    /// The RNG is needed to generate a nonce.
+    /// The RNG is needed to generate the header.
     pub fn init<T>(csprng: &mut T, key: &Key) -> (Header, Self)
     where
         T: RngCore + CryptoRng,
@@ -172,42 +160,17 @@ impl PushStream {
 
     /// Encrypt a message and its associated data.
     pub fn push(&mut self, message: &[u8], associated_data: &[u8], tag: Tag) -> Result<Vec<u8>> {
-        ensure!(associated_data.len() as u64 <= u64::MAX, Crypto);
-        ensure!(
-            message.len() as u64 <= u64::MAX - (TAG_BLOCK_SIZE as u64),
-            Crypto
-        );
+        let cipher_nonce = self.0.get_cipher_nonce();
 
-        let mut ciphertext = Vec::<u8>::with_capacity(1 + message.len() + MAC_BLOCK_SIZE);
-
-        let (mut cipher, mac_key) = self.0.get_cipher_and_mac()?;
-
-        // create tag block
-        let mut tag_block = [0u8; TAG_BLOCK_SIZE];
-        tag_block[0] = tag as u8;
-        cipher.try_seek(64).ok().context(Crypto)?;
-        cipher
-            .try_apply_keystream(&mut tag_block)
-            .ok()
-            .context(Crypto)?;
-        ciphertext.push(tag_block[0]);
-
-        // encrypt ciphertext
+        let mut ciphertext = Vec::with_capacity(1 + message.len() + MAC_BLOCK_SIZE);
+        ciphertext.push(tag as u8);
         ciphertext.extend_from_slice(message);
-        cipher.try_seek(128).ok().context(Crypto)?;
-        cipher
-            .try_apply_keystream(&mut ciphertext[1..]) // skip tag block
-            .ok()
-            .context(Crypto)?;
+        let mac =
+            self.0
+                .encrypt_in_place_detached(&cipher_nonce, associated_data, &mut ciphertext)?;
+        ciphertext.extend_from_slice(&mac);
 
-        // compute and append mac
-        let mac_output =
-            Stream::compute_mac(&mac_key, associated_data, tag_block, &ciphertext[1..])?
-                .into_bytes();
-        ciphertext.extend_from_slice(&mac_output);
-
-        // get ready for next round
-        self.0.update_state(mac_output, tag)?;
+        self.0.update_state(mac, tag)?;
 
         Ok(ciphertext)
     }
@@ -224,46 +187,108 @@ impl PullStream {
 
     /// Decrypt a pushed message with its associated data.
     pub fn pull(&mut self, ciphertext: &[u8], associated_data: &[u8]) -> Result<(Tag, Vec<u8>)> {
-        let (mut cipher, mac_key) = self.0.get_cipher_and_mac()?;
+        let cipher_nonce = self.0.get_cipher_nonce();
 
-        // decrypt tag
+        if ciphertext.len() < MAC_BLOCK_SIZE {
+            return Err(aead::Error);
+        }
+        let (message, mac) = ciphertext.split_at(ciphertext.len() - MAC_BLOCK_SIZE);
+        let mut message = Vec::from(message);
+        let mac = *poly1305::Block::from_slice(mac);
+
+        self.0
+            .decrypt_in_place_detached(&cipher_nonce, associated_data, &mut message, &mac)?;
+        let tag = Tag::try_from(message[0]).map_err(|_| aead::Error)?;
+
+        self.0.update_state(mac, tag)?;
+
+        Ok((tag, Vec::from(&message[1..])))
+    }
+}
+
+impl AeadCore for Stream {
+    type NonceSize = <ChaCha20 as NewCipher>::NonceSize;
+    type TagSize = <Poly1305 as UniversalHash>::BlockSize;
+    type CiphertextOverhead = <Poly1305 as UniversalHash>::BlockSize;
+}
+
+// here, `buffer` is understood as already containing the message's tag
+impl AeadInPlace for Stream {
+    fn encrypt_in_place_detached(
+        &self,
+        nonce: &aead::Nonce<Self>,
+        associated_data: &[u8],
+        buffer: &mut [u8],
+    ) -> std::result::Result<aead::Tag<Self>, aead::Error> {
+        if buffer.is_empty() {
+            return Err(aead::Error);
+        }
+        let tag = Tag::try_from(buffer[0]).map_err(|_| aead::Error)?;
+
+        if buffer.len() as u64 > u64::MAX - (TAG_BLOCK_SIZE as u64) {
+            return Err(aead::Error);
+        }
+
+        let (mut cipher, mac_key) = self.get_cipher_and_mac(nonce)?;
+
+        // create tag block
         let mut tag_block = [0u8; TAG_BLOCK_SIZE];
-        tag_block[0] = ciphertext[0];
-        cipher.try_seek(64).ok().context(Crypto)?;
+        tag_block[0] = tag as u8;
+        cipher.try_seek(64).map_err(|_| aead::Error)?;
         cipher
             .try_apply_keystream(&mut tag_block)
-            .ok()
-            .context(Crypto)?;
-        let tag = Tag::try_from(tag_block[0]).ok().context(Crypto)?;
-        tag_block[0] = ciphertext[0];
+            .map_err(|_| aead::Error)?;
+        buffer[0] = tag_block[0];
 
-        // decrypt ciphertext
-        let mut message = Vec::<u8>::with_capacity(ciphertext.len() - MAC_BLOCK_SIZE - 1);
-        message.extend_from_slice(&ciphertext[1..ciphertext.len() - MAC_BLOCK_SIZE]);
-        cipher.try_seek(128).ok().context(Crypto)?;
+        // encrypt ciphertext
+        cipher.try_seek(128).map_err(|_| aead::Error)?;
         cipher
-            .try_apply_keystream(&mut message)
-            .ok()
-            .context(Crypto)?;
+            .try_apply_keystream(&mut buffer[1..]) // skip tag
+            .map_err(|_| aead::Error)?;
+
+        // compute and append mac
+        let mac_output =
+            Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer[1..])?.into_bytes();
+
+        Ok(mac_output)
+    }
+
+    fn decrypt_in_place_detached(
+        &self,
+        nonce: &aead::Nonce<Self>,
+        associated_data: &[u8],
+        buffer: &mut [u8],
+        mac: &aead::Tag<Self>,
+    ) -> std::result::Result<(), aead::Error> {
+        let (mut cipher, mac_key) = self.get_cipher_and_mac(nonce)?;
+
+        // decrypt tag
+        if buffer.is_empty() {
+            return Err(aead::Error);
+        }
+        let mut tag_block = [0u8; TAG_BLOCK_SIZE];
+        tag_block[0] = buffer[0];
+        cipher.try_seek(64).map_err(|_| aead::Error)?;
+        cipher
+            .try_apply_keystream(&mut tag_block)
+            .map_err(|_| aead::Error)?;
+        let tag = tag_block[0];
+        tag_block[0] = buffer[0];
+        buffer[0] = tag;
 
         // compute mac and reject if not matching
-        let mac_output = Stream::compute_mac(
-            &mac_key,
-            associated_data,
-            tag_block,
-            &ciphertext[1..ciphertext.len() - MAC_BLOCK_SIZE],
-        )?
-        .into_bytes();
-        ensure!(
-            mac_output
-                .as_slice()
-                .eq(&ciphertext[ciphertext.len() - MAC_BLOCK_SIZE..]),
-            Crypto
-        );
+        let mac_output =
+            Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer[1..])?.into_bytes();
+        if bool::from(!mac_output.ct_eq(mac)) {
+            return Err(aead::Error);
+        }
 
-        // get ready for next round
-        self.0.update_state(mac_output, tag)?;
+        // decrypt ciphertext
+        cipher.try_seek(128).map_err(|_| aead::Error)?;
+        cipher
+            .try_apply_keystream(&mut buffer[1..])
+            .map_err(|_| aead::Error)?;
 
-        Ok((tag, message))
+        Ok(())
     }
 }
