@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 
-use aead::{AeadCore, AeadInPlace};
+use aead::{AeadCore, AeadInPlace, Result};
 use chacha20::{
     cipher::{
         consts::U16,
@@ -25,8 +25,6 @@ use crate::{header::Header, Key, Tag};
 
 const MAC_BLOCK_SIZE: usize = 16;
 const TAG_BLOCK_SIZE: usize = 16 * 4;
-
-type Result<T> = std::result::Result<T, aead::Error>;
 
 /// AEAD for libsodium's secretstream. Better to use [`PushStream`] & [`PullStream`] as theses
 /// take care of rekeying and computing the next nonce.

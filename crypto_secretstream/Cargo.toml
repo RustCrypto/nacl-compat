@@ -16,7 +16,7 @@ categories = ["cryptography"]
 keywords = ["nacl", "libsodium", "public-key", "chacha20", "poly1305"]
 
 [dependencies]
-aead = { version = "0.4", features = ["stream"] }
+aead = { version = "^0.4.3", features = ["stream"] }
 rand_core = "0.6"
 chacha20 = { version = "0.7", features = ["expose-core", "hchacha"] }
 poly1305 = "0.7"
