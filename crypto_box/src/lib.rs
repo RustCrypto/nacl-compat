@@ -41,7 +41,7 @@
 //!
 //! // Generate a random secret key.
 //! // NOTE: It can be serialized as bytes by calling `secret_key.to_bytes()`
-//! let mut rng = rand_core::OsRng;
+//! let mut rng = crypto_box::rand_core::OsRng;
 //! let alice_secret_key = SecretKey::generate(&mut rng);
 //!
 //! // Get the public key for the secret key we just generated
@@ -102,7 +102,7 @@
 //! ```rust
 //! use crypto_box::{ChaChaBox, PublicKey, SecretKey, aead::{Aead, Payload}};
 //!
-//! let mut rng = rand_core::OsRng;
+//! let mut rng = crypto_box::rand_core::OsRng;
 //! let alice_secret_key = SecretKey::generate(&mut rng);
 //! let alice_public_key_bytes = alice_secret_key.public_key().as_bytes().clone();
 //! let bob_public_key = PublicKey::from([
@@ -180,6 +180,7 @@
 )]
 #![warn(missing_docs, rust_2018_idioms)]
 
+pub use rand_core;
 pub use xsalsa20poly1305::{aead, generate_nonce};
 
 use chacha20::hchacha;
