@@ -1,8 +1,8 @@
-use std::convert::TryFrom;
-
+#[cfg(feature = "alloc")]
 use crypto_secretstream::*;
 use sodiumoxide::crypto::secretstream as reference;
 
+#[cfg(feature = "alloc")]
 const MESSAGES: [(&[u8], Tag, &[u8]); 5] = [
     (b"you are", Tag::Message, &[1, 2, 3]),
     (b"a beautiful", Tag::Message, &[]),
@@ -12,6 +12,7 @@ const MESSAGES: [(&[u8], Tag, &[u8]); 5] = [
 ];
 
 #[test]
+#[cfg(feature = "alloc")]
 fn pushed_can_be_pulled() {
     use rand_core::OsRng;
 
@@ -24,12 +25,13 @@ fn pushed_can_be_pulled() {
     let mut pull_stream = reference::Stream::init_pull(&header, &key).expect("create Stream");
 
     MESSAGES.iter().for_each(|(message, tag, additional_data)| {
-        let ciphertext = push_stream
-            .push(message, additional_data, *tag)
+        let mut ciphertext = Vec::from(*message);
+        push_stream
+            .push(&mut ciphertext, additional_data, *tag)
             .expect("push in stream");
 
         let (cleartext, pulled_tag) = pull_stream
-            .pull(&ciphertext, Some(additional_data))
+            .pull(&mut ciphertext, Some(additional_data))
             .expect("to pull from Stream");
 
         assert_eq!(*tag as u8, pulled_tag as u8);
@@ -38,7 +40,10 @@ fn pushed_can_be_pulled() {
 }
 
 #[test]
+#[cfg(feature = "alloc")]
 fn pulled_can_be_pushed() {
+    use core::convert::TryFrom;
+
     let key = reference::gen_key();
 
     let (mut push_stream, header) = reference::Stream::init_push(&key).expect("create Stream");
@@ -56,15 +61,15 @@ fn pulled_can_be_pushed() {
             Tag::Final => reference::Tag::Final,
         };
 
-        let ciphertext = push_stream
+        let mut ciphertext = push_stream
             .push(message, Some(additional_data), reference_tag)
             .expect("push in stream");
 
-        let (pulled_tag, cleartext) = pull_stream
-            .pull(&ciphertext, additional_data)
+        let pulled_tag = pull_stream
+            .pull(&mut ciphertext, additional_data)
             .expect("to pull from Stream");
 
         assert_eq!(*tag as u8, pulled_tag as u8);
-        assert_eq!(*message, cleartext);
+        assert_eq!(*message, ciphertext);
     });
 }

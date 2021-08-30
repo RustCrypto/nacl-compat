@@ -1,5 +1,4 @@
-use std::{
-    error::Error,
+use core::{
     fmt::{self, Display},
     ops::Range,
 };
@@ -22,9 +21,8 @@ impl InvalidLength {
     }
 }
 
-impl Error for InvalidLength {}
 impl Display for InvalidLength {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!(
             "invalid length: expected {} but got {}",
             self.expected, self.got,
@@ -50,9 +48,8 @@ impl<Idx: fmt::Debug + PartialOrd<Idx>> InvalidRange<Idx> {
     }
 }
 
-impl<Idx: fmt::Debug + Display> Error for InvalidRange<Idx> {}
 impl<Idx: fmt::Debug + Display> Display for InvalidRange<Idx> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!(
             "invalid range: expected a value between {} and {} but got {}",
             self.expected.start, self.expected.end, self.got,

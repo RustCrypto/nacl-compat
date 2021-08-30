@@ -1,6 +1,6 @@
-use std::convert::TryFrom;
+use core::convert::TryFrom;
 
-use aead::{AeadCore, AeadInPlace, Result};
+use aead::{AeadCore, AeadInPlace, Buffer, Result};
 use chacha20::{
     cipher::{
         consts::U16,
@@ -89,29 +89,32 @@ impl Stream {
     ) -> Result<Output<Poly1305>> {
         let mut mac = Poly1305::new(mac_key);
 
-        // blind with associated data
-        mac.update_padded(associated_data);
-
         // pad block error in libsodium, see 290197ba
         let mac_padding_error_size = ((0x10 - 64 + ciphertext.len() as i64) & 0xf) as usize;
-        let mac_padding_error = vec![0u8; mac_padding_error_size];
 
         // compute size block
         let mut size_block = [0u8; MAC_BLOCK_SIZE];
         size_block[..8].copy_from_slice(&associated_data.len().to_le_bytes());
         size_block[8..].copy_from_slice(&(TAG_BLOCK_SIZE + ciphertext.len()).to_le_bytes());
 
-        let rest = tag_block
-            .iter()
-            .chain(
-                ciphertext, // skip tag block
-            )
-            .copied()
-            .chain(mac_padding_error.into_iter())
-            .chain(size_block.iter().copied())
-            .collect::<Vec<_>>();
+        mac.update_padded(associated_data); // blind with associated data
+        mac.update_padded(&tag_block); // do not any add padding
 
-        Ok(mac.compute_unpadded(&rest))
+        // add all full blocks from ciphertext
+        let chunks = ciphertext.chunks_exact(MAC_BLOCK_SIZE);
+        let remaining_ciphertext = chunks.remainder();
+        for block in chunks {
+            mac.update(poly1305::Block::from_slice(block))
+        }
+
+        // compute the last blocks: remaining_ciphertext + padding error + size_block
+        let mut last_blocks = [0u8; 3 * MAC_BLOCK_SIZE];
+        last_blocks[..remaining_ciphertext.len()].clone_from_slice(remaining_ciphertext);
+        let size_block_offset = remaining_ciphertext.len() + mac_padding_error_size;
+        last_blocks[size_block_offset..size_block_offset + MAC_BLOCK_SIZE]
+            .copy_from_slice(&size_block);
+
+        Ok(mac.compute_unpadded(&last_blocks[..size_block_offset + MAC_BLOCK_SIZE]))
     }
 
     /// Rekey the stream, used internally in `update_state`.
@@ -154,20 +157,27 @@ impl PushStream {
     }
 
     /// Encrypt a message and its associated data.
-    pub fn push(&mut self, message: &[u8], associated_data: &[u8], tag: Tag) -> Result<Vec<u8>> {
+    pub fn push(
+        &mut self,
+        buffer: &mut impl aead::Buffer,
+        associated_data: &[u8],
+        tag: Tag,
+    ) -> Result<()> {
         let cipher_nonce = self.0.get_cipher_nonce();
 
-        let mut ciphertext = Vec::with_capacity(1 + message.len() + MAC_BLOCK_SIZE);
-        ciphertext.push(tag as u8);
-        ciphertext.extend_from_slice(message);
+        buffer
+            .extend_from_slice(&[tag as u8])
+            .map_err(|_| aead::Error)?;
+        buffer.as_mut().rotate_right(1);
+
         let mac =
             self.0
-                .encrypt_in_place_detached(&cipher_nonce, associated_data, &mut ciphertext)?;
-        ciphertext.extend_from_slice(&mac);
+                .encrypt_in_place_detached(&cipher_nonce, associated_data, buffer.as_mut())?;
+        buffer.extend_from_slice(&mac).map_err(|_| aead::Error)?;
 
         self.0.update_state(mac, tag)?;
 
-        Ok(ciphertext)
+        Ok(())
     }
 }
 
@@ -181,23 +191,24 @@ impl PullStream {
     }
 
     /// Decrypt a pushed message with its associated data.
-    pub fn pull(&mut self, ciphertext: &[u8], associated_data: &[u8]) -> Result<(Tag, Vec<u8>)> {
+    pub fn pull(&mut self, buffer: &mut impl Buffer, associated_data: &[u8]) -> Result<Tag> {
         let cipher_nonce = self.0.get_cipher_nonce();
 
-        if ciphertext.len() < MAC_BLOCK_SIZE {
+        if buffer.len() < MAC_BLOCK_SIZE + 1 {
             return Err(aead::Error);
         }
-        let (message, mac) = ciphertext.split_at(ciphertext.len() - MAC_BLOCK_SIZE);
-        let mut message = Vec::from(message);
-        let mac = *poly1305::Block::from_slice(mac);
+        let mac = *poly1305::Block::from_slice(&buffer.as_ref()[buffer.len() - MAC_BLOCK_SIZE..]);
+        buffer.truncate(buffer.len() - MAC_BLOCK_SIZE);
 
         self.0
-            .decrypt_in_place_detached(&cipher_nonce, associated_data, &mut message, &mac)?;
-        let tag = Tag::try_from(message[0]).map_err(|_| aead::Error)?;
+            .decrypt_in_place_detached(&cipher_nonce, associated_data, buffer.as_mut(), &mac)?;
+        let tag = Tag::try_from(buffer.as_ref()[0]).map_err(|_| aead::Error)?;
+        buffer.as_mut().rotate_left(1);
+        buffer.truncate(buffer.len() - 1);
 
         self.0.update_state(mac, tag)?;
 
-        Ok((tag, Vec::from(&message[1..])))
+        Ok(tag)
     }
 }
 
@@ -214,7 +225,7 @@ impl AeadInPlace for Stream {
         nonce: &aead::Nonce<Self>,
         associated_data: &[u8],
         buffer: &mut [u8],
-    ) -> std::result::Result<aead::Tag<Self>, aead::Error> {
+    ) -> Result<aead::Tag<Self>> {
         if buffer.is_empty() {
             return Err(aead::Error);
         }
@@ -254,7 +265,7 @@ impl AeadInPlace for Stream {
         associated_data: &[u8],
         buffer: &mut [u8],
         mac: &aead::Tag<Self>,
-    ) -> std::result::Result<(), aead::Error> {
+    ) -> Result<()> {
         let (mut cipher, mac_key) = self.get_cipher_and_mac(nonce)?;
 
         // decrypt tag
