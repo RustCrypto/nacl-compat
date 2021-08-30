@@ -1,6 +1,6 @@
 [package]
 name = "crypto_secretstream"
-version = "0.1.0"
+version = "0.0.1"
 description = """
 Pure Rust implementation of libsodium's crypto_secretstream secret-key using
 ChaCha20 and Poly1305
@@ -16,7 +16,7 @@ categories = ["cryptography"]
 keywords = ["nacl", "libsodium", "public-key", "chacha20", "poly1305"]
 
 [dependencies]
-aead = { version = "^0.4.3", features = ["stream"] }
+aead = { version = "0.4", features = ["stream"] }
 chacha20 = { version = "0.7", features = ["expose-core", "hchacha"] }
 poly1305 = "0.7"
 rand_core = "0.6"
