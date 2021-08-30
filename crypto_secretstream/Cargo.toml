@@ -17,7 +17,7 @@ keywords = ["nacl", "libsodium", "public-key", "chacha20", "poly1305"]
 
 [dependencies]
 aead = { version = "^0.4.3", features = ["stream"] }
-chacha20 = { version = "0.7", features = ["expose-core", "hchacha"] }
+chacha20 = { version = "0.8", features = ["expose-core", "hchacha"] }
 poly1305 = "0.7"
 rand_core = "0.6"
 subtle = { version = "2", default-features = false }

@@ -63,14 +63,25 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chacha20"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea8756167ea0aca10e066cdbe7813bd71d2f24e69b0bc7b50509590cef2ce0b9"
+checksum = "f08493fa7707effc63254c66c6ea908675912493cd67952eda23c09fae2610b1"
 dependencies = [
  "cfg-if",
  "cipher",
- "cpufeatures",
+ "cpufeatures 0.2.1",
  "zeroize",
+]
+
+[[package]]
+name = "chacha20"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8c5d87765c99be3d2cb08d11a3c14820ecaf2c7ad45d301c533103d2d8a146c"
+dependencies = [
+ "cfg-if",
+ "cipher",
+ "cpufeatures 0.2.1",
 ]
 
 [[package]]
@@ -80,7 +91,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "175a11316f33592cf2b71416ee65283730b5b7849813c4891d02a12906ed9acc"
 dependencies = [
  "aead",
- "chacha20",
+ "chacha20 0.7.3",
  "cipher",
  "poly1305",
  "zeroize",
@@ -117,10 +128,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "cpufeatures"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95059428f66df56b63431fdb4e1947ed2190586af5c5a8a8b71122bdf5a7f469"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "crypto_box"
 version = "0.6.1"
 dependencies = [
- "chacha20",
+ "chacha20 0.8.0",
  "chacha20poly1305",
  "rand_core 0.6.3",
  "salsa20",
@@ -134,7 +154,7 @@ name = "crypto_secretstream"
 version = "0.1.0"
 dependencies = [
  "aead",
- "chacha20",
+ "chacha20 0.8.0",
  "getrandom",
  "poly1305",
  "rand_core 0.6.3",
@@ -243,9 +263,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.98"
+version = "0.2.101"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "320cfe77175da3a483efed4bc0adc1968ca050b098ce4f2f1c13a56626128790"
+checksum = "3cb00336871be5ed2c8ed44b60ae9959dc5b9f08539422ed43f09e34ecaeba21"
 
 [[package]]
 name = "libsodium-sys"
@@ -301,7 +321,7 @@ version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9fcffab1f78ebbdf4b93b68c1ffebc24037eedf271edaca795732b24e5e4e349"
 dependencies = [
- "cpufeatures",
+ "cpufeatures 0.1.5",
  "opaque-debug",
  "universal-hash",
 ]
