@@ -3,6 +3,8 @@
 //! Adapted from PHP Sodium Compat's test vectors:
 //! <https://www.phpclasses.org/browse/file/122796.html>
 
+#![cfg(feature = "std")]
+
 use crypto_box::aead::{generic_array::GenericArray, Aead, AeadInPlace, Payload};
 use crypto_box::{ChaChaBox, PublicKey, SalsaBox, SecretKey};
 use std::any::TypeId;

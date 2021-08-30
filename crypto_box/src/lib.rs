@@ -33,6 +33,8 @@
 //! # Usage
 //!
 //! ```rust
+//! # #[cfg(feature = "std")]
+//! # {
 //! use crypto_box::{Box, PublicKey, SecretKey, aead::Aead};
 //!
 //! //
@@ -92,6 +94,7 @@
 //! let decrypted_plaintext = bob_box.decrypt(&nonce, &ciphertext[..]).unwrap();
 //!
 //! assert_eq!(&plaintext[..], &decrypted_plaintext[..]);
+//! # }
 //! ```
 //!
 //! ## Choosing `ChaChaBox` vs `SalasaBox`
@@ -100,6 +103,8 @@
 //! field. To specify customized AD, you can use `crypto_box::ChaChaBox` instead.
 //!
 //! ```rust
+//! # #[cfg(feature = "std")]
+//! # {
 //! use crypto_box::{ChaChaBox, PublicKey, SecretKey, aead::{Aead, Payload}};
 //!
 //! let mut rng = crypto_box::rand_core::OsRng;
@@ -144,6 +149,7 @@
 //! }).unwrap();
 //!
 //! assert_eq!(&plaintext[..], &decrypted_plaintext[..]);
+//! }
 //! ```
 //!
 //! ## In-place Usage (eliminates `alloc` requirement)
