@@ -23,10 +23,7 @@ impl Header {
     pub const BYTES: usize = 24;
 
     /// Generate a new random [`Header`].
-    pub(super) fn generate<T>(csprng: &mut T) -> Self
-    where
-        T: RngCore + CryptoRng,
-    {
+    pub(super) fn generate(mut csprng: impl RngCore + CryptoRng) -> Self {
         let mut bytes = GenericArray::<u8, U24>::default();
         csprng.fill_bytes(&mut bytes);
 

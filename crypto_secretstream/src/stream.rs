@@ -148,10 +148,7 @@ impl PushStream {
     /// Create a new stream for sending messages with a preshared key.
     ///
     /// The RNG is needed to generate the header.
-    pub fn init<T>(csprng: &mut T, key: &Key) -> (Header, Self)
-    where
-        T: RngCore + CryptoRng,
-    {
+    pub fn init(csprng: impl RngCore + CryptoRng, key: &Key) -> (Header, Self) {
         let header = Header::generate(csprng);
         let stream = Stream::init(key, header);
 

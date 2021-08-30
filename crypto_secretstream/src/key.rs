@@ -16,10 +16,7 @@ impl Key {
     pub const BYTES: usize = 32;
 
     /// Generate a new random [`Key`].
-    pub fn generate<T>(csprng: &mut T) -> Self
-    where
-        T: RngCore + CryptoRng,
-    {
+    pub fn generate(mut csprng: impl RngCore + CryptoRng) -> Self {
         let mut bytes = chacha20::Key::default();
         csprng.fill_bytes(&mut bytes);
 
