@@ -10,8 +10,8 @@ Pure Rust implementation of APIs from [NaCl]-family libraries
 
 | Name                                                                                               | Crates.io                                                                                                             | Documentation                                                                                          | MSRV |
 | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---- |
-| [`crypto_box`](https://github.com/RustCrypto/nacl-compat/tree/master/crypto_box)                   | [![crates.io](https://img.shields.io/crates/v/crypto_box.svg)](https://crates.io/crates/crypto_box)                   | [![Documentation](https://docs.rs/crypto_box/badge.svg)](https://docs.rs/crypto_box)                   | 1.49 |
-| [`crypto_secretstream`](https://github.com/RustCrypto/nacl-compat/tree/master/crypto_secretstream) | [![crates.io](https://img.shields.io/crates/v/crypto_secretstream.svg)](https://crates.io/crates/crypto_secretstream) | [![Documentation](https://docs.rs/crypto_secretstream/badge.svg)](https://docs.rs/crypto_secretstream) | 1.49 |
+| [`crypto_box`](https://github.com/RustCrypto/nacl-compat/tree/master/crypto_box)                   | [![crates.io](https://img.shields.io/crates/v/crypto_box.svg)](https://crates.io/crates/crypto_box)                   | [![Documentation](https://docs.rs/crypto_box/badge.svg)](https://docs.rs/crypto_box)                   | 1.51 |
+| [`crypto_secretstream`](https://github.com/RustCrypto/nacl-compat/tree/master/crypto_secretstream) | [![crates.io](https://img.shields.io/crates/v/crypto_secretstream.svg)](https://crates.io/crates/crypto_secretstream) | [![Documentation](https://docs.rs/crypto_secretstream/badge.svg)](https://docs.rs/crypto_secretstream) | 1.51 |
 
 ## MSRV Policy
 
