@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 members = [
     "crypto_box",
     "crypto_secretstream",

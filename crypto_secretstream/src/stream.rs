@@ -86,7 +86,7 @@ impl Stream {
         associated_data: &[u8],
         tag_block: [u8; TAG_BLOCK_SIZE],
         ciphertext: &[u8],
-    ) -> Result<Output<Poly1305>> {
+    ) -> Output<Poly1305> {
         let mut mac = Poly1305::new(mac_key);
 
         // pad block error in libsodium, see 290197ba
@@ -114,7 +114,7 @@ impl Stream {
         last_blocks[size_block_offset..size_block_offset + MAC_BLOCK_SIZE]
             .copy_from_slice(&size_block);
 
-        Ok(mac.compute_unpadded(&last_blocks[..size_block_offset + MAC_BLOCK_SIZE]))
+        mac.compute_unpadded(&last_blocks[..size_block_offset + MAC_BLOCK_SIZE])
     }
 
     /// Rekey the stream, used internally in `update_state`.
@@ -254,7 +254,7 @@ impl AeadInPlace for Stream {
 
         // compute and append mac
         let mac_output =
-            Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer[1..])?.into_bytes();
+            Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer[1..]).into_bytes();
 
         Ok(mac_output)
     }
@@ -284,7 +284,7 @@ impl AeadInPlace for Stream {
 
         // compute mac and reject if not matching
         let mac_output =
-            Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer[1..])?.into_bytes();
+            Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer[1..]).into_bytes();
         if bool::from(!mac_output.ct_eq(mac)) {
             return Err(aead::Error);
         }

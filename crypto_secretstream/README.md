@@ -43,13 +43,14 @@ dual licensed as above, without any additional terms or conditions.
 [docs-image]: https://docs.rs/crypto_secretstream/badge.svg
 [docs-link]: https://docs.rs/crypto_secretstream/
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.49+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.51+-blue.svg
 [codecov-image]: https://codecov.io/gh/RustCrypto/AEADs/branch/master/graph/badge.svg
 [codecov-link]: https://codecov.io/gh/RustCrypto/AEADs
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260038-AEADs
 [build-image]: https://github.com/RustCrypto/AEADs/workflows/crypto_secretstream/badge.svg?branch=master&event=push
 [build-link]: https://github.com/RustCrypto/AEADs/actions
+
 [//]: # "general links"
 [libsodium]: https://doc.libsodium.org/
 [`crypto_secretstream`]: https://libsodium.gitbook.io/doc/secret-key_cryptography/secretstream
