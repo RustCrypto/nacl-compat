@@ -106,7 +106,7 @@ dependencies = [
 
 [[package]]
 name = "crypto_secretstream"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "aead",
  "chacha20 0.7.3",
