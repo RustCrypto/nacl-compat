@@ -1,6 +1,6 @@
 //! Pure Rust implementation of the [`crypto_secretstream`] AEAD
 //! from [NaCl]-family libraries (e.g. libsodium, TweetNaCl)
-//! which uses [chacha20] and [poly1305].
+//! which uses [ChaCha20] and [Poly1305].
 //!
 //! # Introduction
 //!
@@ -71,8 +71,8 @@
 //!
 //! [NaCl]: https://nacl.cr.yp.to/
 //! [`crypto_secretstream`]: https://doc.libsodium.org/secret-key_cryptography/secretstream
-//! [chacha20]: https://github.com/RustCrypto/stream-ciphers/tree/master/chacha20
-//! [poly1305]: https://github.com/RustCrypto/universal-hashes/tree/master/poly1305
+//! [ChaCha20]: https://github.com/RustCrypto/stream-ciphers/tree/master/chacha20
+//! [Poly1305]: https://github.com/RustCrypto/universal-hashes/tree/master/poly1305
 
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",

@@ -9,7 +9,7 @@
 [![Build Status][build-image]][build-link]
 
 Pure Rust implementation of [libsodium]'s [`crypto_secretstream`] primitive,
-providing an [AEAD] using [chacha20] and [poly1305].
+providing an [AEAD] using [ChaCha20] and [Poly1305].
 
 It is tested against [sodiumoxide], a Rust [libsodium] bindings.
 

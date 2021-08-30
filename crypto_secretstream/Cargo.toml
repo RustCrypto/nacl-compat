@@ -3,7 +3,7 @@ name = "crypto_secretstream"
 version = "0.1.0"
 description = """
 Pure Rust implementation of libsodium's crypto_secretstream secret-key using
-chacha20 and poly1305
+ChaCha20 and Poly1305
 """
 authors = ["C4DT", "RustCrypto Developers"]
 edition = "2018"
