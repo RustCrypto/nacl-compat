@@ -1,15 +1,11 @@
 use std::convert::TryFrom;
 
 use rand_core::{CryptoRng, RngCore};
-use snafu::ensure;
+
+use crate::errors::InvalidLength;
 
 /// Symetric key used by [`crate::PushStream`] and [`crate::PullStream`].
 pub struct Key(chacha20::Key);
-
-#[derive(Debug, snafu::Snafu)]
-pub enum Error {
-    InvalidLength,
-}
 
 impl Key {
     /// Number of bytes used by the serialisation.
@@ -41,10 +37,12 @@ impl From<[u8; Key::BYTES]> for Key {
 }
 
 impl TryFrom<&[u8]> for Key {
-    type Error = Error;
+    type Error = InvalidLength;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        ensure!(slice.len() == Self::BYTES, InvalidLength);
+        if slice.len() != Self::BYTES {
+            return Err(InvalidLength::new(Self::BYTES, slice.len()));
+        }
 
         let mut array = [0u8; Self::BYTES];
         array.copy_from_slice(slice);

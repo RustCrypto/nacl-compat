@@ -5,14 +5,11 @@ use chacha20::cipher::{
     generic_array::{sequence::Split, GenericArray},
 };
 use rand_core::{CryptoRng, RngCore};
-use snafu::ensure;
 
-use super::nonce::{HChaCha20Nonce, Nonce};
-
-#[derive(Debug, snafu::Snafu)]
-pub enum Error {
-    InvalidLength,
-}
+use super::{
+    errors::InvalidLength,
+    nonce::{HChaCha20Nonce, Nonce},
+};
 
 /// Header of the secret stream, can be sent as cleartext.
 #[derive(Clone, Copy)]
@@ -49,10 +46,12 @@ impl From<[u8; Header::BYTES]> for Header {
 }
 
 impl TryFrom<&[u8]> for Header {
-    type Error = Error;
+    type Error = InvalidLength;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        ensure!(slice.len() == Self::BYTES, InvalidLength);
+        if slice.len() != Self::BYTES {
+            return Err(InvalidLength::new(Self::BYTES, slice.len()));
+        }
 
         let mut array = [0u8; Self::BYTES];
         array.copy_from_slice(slice);

@@ -1,9 +1,6 @@
 use std::convert::TryFrom;
 
-#[derive(Debug, snafu::Snafu)]
-pub enum Error {
-    InvalidValue,
-}
+use crate::errors;
 
 /// Tag is attached to each message, which can change the state of the stream.
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -19,7 +16,7 @@ pub enum Tag {
 }
 
 impl TryFrom<u8> for Tag {
-    type Error = Error;
+    type Error = errors::InvalidRange<u8>;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
@@ -27,7 +24,7 @@ impl TryFrom<u8> for Tag {
             1 => Ok(Self::Push),
             2 => Ok(Self::Rekey),
             3 => Ok(Self::Final),
-            _ => InvalidValue.fail(),
+            _ => Err(errors::InvalidRange::new(0..3, value)),
         }
     }
 }
