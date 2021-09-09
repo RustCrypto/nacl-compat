@@ -2,7 +2,7 @@ use core::convert::TryFrom;
 
 use rand_core::{CryptoRng, RngCore};
 
-use crate::InvalidLength;
+use crate::errors::InvalidLength;
 
 /// [`Key`] that should be kept private.
 #[derive(Clone)]

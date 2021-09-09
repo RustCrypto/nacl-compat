@@ -1,6 +1,6 @@
 use core::convert::TryFrom;
 
-use crate::InvalidLength;
+use crate::errors::InvalidLength;
 
 /// [`Key`] which can be freely shared.
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
