@@ -1,0 +1,35 @@
+[package]
+name = "crypto_kx"
+version = "0.0.1"
+description = "Pure Rust implementation of libsodium's crypto_kx using BLAKE2"
+authors = ["C4DT", "RustCrypto Developers"]
+edition = "2018"
+license = "Apache-2.0 OR MIT"
+readme = "README.md"
+documentation = "https://docs.rs/crypto_kx"
+homepage = "https://github.com/RustCrypto/nacl-compat"
+repository = "https://github.com/RustCrypto/nacl-compat/tree/master/crypto_kx"
+categories = ["cryptography", "no-std"]
+keywords = ["nacl", "libsodium", "public-key", "blake2"]
+
+[dependencies]
+blake2 = { version = "0.9", default-features = false }
+rand_core = "0.6"
+# renamed to allow having a "serde" feature
+our_serde = { package = "serde", version = "1", optional = true, features = ["derive"] }
+
+[dependencies.x25519-dalek]
+version = "1"
+default-features = false
+features = ["u64_backend"] # to allow --no-default-features
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+getrandom = { version = "0.2", default-features = false, features = ["js"] }
+
+[dev-dependencies]
+rand_core = { version = "0.6", features = ["std"] }
+sodiumoxide = "0.2"
+
+[features]
+serde = ["our_serde", "x25519-dalek/serde"]
+std = ["blake2/std", "rand_core/std", "x25519-dalek/std"]
