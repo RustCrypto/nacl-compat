@@ -56,7 +56,4 @@ mod keys;
 pub mod errors;
 
 pub use keypair::KeyPair;
-pub use keys::{
-    ClientSession as ClientSessionKeys, Public as PublicKey, Secret as SecretKey,
-    ServerSession as ServerSessionKeys, Session as SessionKey,
-};
+pub use keys::*;
