@@ -4,16 +4,19 @@
 //!
 //! # Introduction
 //!
-//! Imagine Alice wants to open a safe channel of communication with Betty,
-//! using something like [`crypto_secretstream`], they first need to agree on
+//! Imagine Alice wants to open a safe communication channel with Betty,
+//! using something like [`crypto_secretstream`]. They first need to agree on
 //! a shared secret.
 //!
-//! One such secret can be obtain if each knows the public key of the other.
-//! Each uses their secret key and the other public key to generate the same
-//! secret without additional communication. No eavesdropper can know what the
-//! secret is, as the secret key is, well, secret.
+//! To obtain this shared secret, Diffie-Hellman can be used, which works as follows:
+//! Suppose both Alice and Betty know the public key of each other.
+//! Then they use their private key and the other's public key to generate a
+//! secret. This secret is the same for both Alice and Betty, as desscribed by
+//! the Diffie-Hellman algorithm.
+//! No eavesdropper can know what the secret is, as they only know the public keys, but
+//! not the private keys.
 //!
-//! Using the same key for sending and receiving might poses cryptographic
+//! Using the same key for sending and receiving might pose cryptographic
 //! issues and/or reduce the overall throughput.
 //! So when computing the shared secret, you actually get two keys,
 //! one for each direction.
