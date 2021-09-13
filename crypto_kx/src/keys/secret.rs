@@ -18,8 +18,11 @@ impl Key {
     pub const BYTES: usize = 32;
 
     /// Generate a new random [`Key`].
-    pub fn generate(csprng: impl RngCore + CryptoRng) -> Self {
-        let secret = x25519_dalek::StaticSecret::new(csprng);
+    pub fn generate(mut csprng: impl RngCore + CryptoRng) -> Self {
+        let mut bytes = [0u8; Self::BYTES];
+        csprng.fill_bytes(&mut bytes);
+
+        let secret = x25519_dalek::StaticSecret::from(bytes);
 
         Self(secret)
     }

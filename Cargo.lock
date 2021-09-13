@@ -109,7 +109,7 @@ dependencies = [
  "chacha20poly1305",
  "rand_core 0.6.3",
  "salsa20",
- "x25519-dalek 1.1.1",
+ "x25519-dalek",
  "xsalsa20poly1305",
  "zeroize",
 ]
@@ -119,11 +119,11 @@ name = "crypto_kx"
 version = "0.0.1"
 dependencies = [
  "blake2",
- "getrandom",
+ "getrandom 0.2.3",
  "rand_core 0.6.3",
  "serde",
  "sodiumoxide",
- "x25519-dalek 2.0.0-pre.0",
+ "x25519-dalek",
 ]
 
 [[package]]
@@ -132,7 +132,7 @@ version = "0.0.1"
 dependencies = [
  "aead",
  "chacha20",
- "getrandom",
+ "getrandom 0.2.3",
  "poly1305",
  "rand_core 0.6.3",
  "sodiumoxide",
@@ -148,19 +148,6 @@ dependencies = [
  "byteorder",
  "digest",
  "rand_core 0.5.1",
- "subtle",
- "zeroize",
-]
-
-[[package]]
-name = "curve25519-dalek"
-version = "4.0.0-pre.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4033478fbf70d6acf2655ac70da91ee65852d69daf7a67bf7a2f518fb47aafcf"
-dependencies = [
- "byteorder",
- "digest",
- "rand_core 0.6.3",
  "serde",
  "subtle",
  "zeroize",
@@ -196,6 +183,17 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
+version = "0.1.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fc3cb4d91f53b50155bdcfd23f6a4c39ae1969c2ae85982b135750cccaf5fce"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "wasi 0.9.0+wasi-snapshot-preview1",
+]
+
+[[package]]
+name = "getrandom"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fcd999463524c52659517fe2cea98493cfe485d10565e7b0fb07dbba7ad2753"
@@ -203,7 +201,7 @@ dependencies = [
  "cfg-if",
  "js-sys",
  "libc",
- "wasi",
+ "wasi 0.10.2+wasi-snapshot-preview1",
  "wasm-bindgen",
 ]
 
@@ -314,6 +312,9 @@ name = "rand_core"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90bde5296fc891b0cef12a6d03ddccc162ce7b2aff54160af9338f8d40df6d19"
+dependencies = [
+ "getrandom 0.1.16",
+]
 
 [[package]]
 name = "rand_core"
@@ -321,7 +322,7 @@ version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
- "getrandom",
+ "getrandom 0.2.3",
 ]
 
 [[package]]
@@ -457,6 +458,12 @@ dependencies = [
 
 [[package]]
 name = "wasi"
+version = "0.9.0+wasi-snapshot-preview1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
+
+[[package]]
+name = "wasi"
 version = "0.10.2+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
@@ -552,18 +559,8 @@ version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a0c105152107e3b96f6a00a65e86ce82d9b125230e1c4302940eca58ff71f4f"
 dependencies = [
- "curve25519-dalek 3.2.0",
+ "curve25519-dalek",
  "rand_core 0.5.1",
- "zeroize",
-]
-
-[[package]]
-name = "x25519-dalek"
-version = "2.0.0-pre.0"
-source = "git+https://github.com/jcape/x25519-dalek?branch=features/new-rand-and-curve25519#cb403025f22167b113462c4576bcebeb9eddc560"
-dependencies = [
- "curve25519-dalek 4.0.0-pre.1",
- "rand_core 0.6.3",
  "serde",
  "zeroize",
 ]

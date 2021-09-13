@@ -19,8 +19,7 @@ rand_core = "0.6"
 our_serde = { package = "serde", version = "1", optional = true, features = ["derive"] }
 
 [dependencies.x25519-dalek]
-git = "https://github.com/jcape/x25519-dalek"
-branch = "features/new-rand-and-curve25519"
+version = "1"
 default-features = false
 features = ["u64_backend"] # to allow --no-default-features
 
