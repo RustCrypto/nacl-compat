@@ -32,7 +32,7 @@
 //!
 //! # Usage
 //!
-//! NOTE: The following examples assumes use of the `std`
+//! NOTE: The following examples assume use of the `std`
 //! [feature](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features).
 //!
 //! ```rust
