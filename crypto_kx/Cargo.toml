@@ -1,6 +1,6 @@
 [package]
 name = "crypto_kx"
-version = "0.0.1"
+version = "0.0.2" # Also update html_root_url in lib.rs when bumping this
 description = "Pure Rust implementation of libsodium's crypto_kx using BLAKE2"
 authors = ["C4DT", "RustCrypto Developers"]
 edition = "2018"
@@ -13,7 +13,7 @@ categories = ["cryptography", "no-std"]
 keywords = ["nacl", "libsodium", "public-key", "blake2"]
 
 [dependencies]
-blake2 = { version = "0.9", default-features = false }
+blake2 = { version = "0.10", default-features = false }
 rand_core = "0.6"
 # renamed to allow having a "serde" feature
 our_serde = { package = "serde", version = "1", optional = true, features = ["derive"] }

@@ -1,4 +1,4 @@
-use blake2::{digest::generic_array::sequence::Split, Blake2b, Digest};
+use blake2::{digest::generic_array::sequence::Split, Blake2b512, Digest};
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{ClientSessionKeys, PublicKey, SecretKey, ServerSessionKeys, SessionKey};
@@ -69,7 +69,7 @@ impl KeyPair {
             .as_dalek()
             .diffie_hellman(other_pubkey.as_dalek());
 
-        let mut hasher = Blake2b::new();
+        let mut hasher = Blake2b512::new();
 
         hasher.update(shared_secret.as_bytes());
         hasher.update(client_pk.as_ref());
