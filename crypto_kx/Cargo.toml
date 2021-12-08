@@ -13,7 +13,7 @@ categories = ["cryptography", "no-std"]
 keywords = ["nacl", "libsodium", "public-key", "blake2"]
 
 [dependencies]
-blake2 = { version = "0.9", default-features = false }
+blake2 = { version = "0.10", default-features = false }
 rand_core = "0.6"
 # renamed to allow having a "serde" feature
 our_serde = { package = "serde", version = "1", optional = true, features = ["derive"] }
