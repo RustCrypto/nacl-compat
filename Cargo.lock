@@ -122,7 +122,7 @@ dependencies = [
 
 [[package]]
 name = "crypto_kx"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "blake2",
  "getrandom 0.2.3",

@@ -1,6 +1,6 @@
 [package]
 name = "crypto_secretstream"
-version = "0.0.1"
+version = "0.0.1" # Also update html_root_url in lib.rs when bumping this
 description = """
 Pure Rust implementation of libsodium's crypto_secretstream secret-key using
 ChaCha20 and Poly1305
