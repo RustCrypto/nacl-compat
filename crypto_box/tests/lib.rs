@@ -54,7 +54,7 @@ fn generate_secret_key() {
 #[test]
 fn secret_and_public_keys() {
     let secret_key = SecretKey::from(ALICE_SECRET_KEY);
-    assert_eq!(&secret_key.to_bytes(), &ALICE_SECRET_KEY);
+    assert_eq!(secret_key.as_bytes(), &ALICE_SECRET_KEY);
 
     // Ensure `Debug` impl on `SecretKey` is covered in tests
     dbg!(&secret_key);

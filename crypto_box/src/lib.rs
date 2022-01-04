@@ -45,7 +45,7 @@
 //! //
 //!
 //! // Generate a random secret key.
-//! // NOTE: It can be serialized as bytes by calling `secret_key.to_bytes()`
+//! // NOTE: The secret key bytes can be accessed by calling `secret_key.as_bytes()`
 //! let mut rng = crypto_box::rand_core::OsRng;
 //! let alice_secret_key = SecretKey::generate(&mut rng);
 //!
@@ -235,9 +235,15 @@ impl SecretKey {
         PublicKey(x25519(self.0, X25519_BASEPOINT_BYTES))
     }
 
-    /// Get the serialized bytes for this [`SecretKey`]
+    #[deprecated(note = "use `as_bytes` instead")]
+    #[allow(missing_docs)]
     pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
         self.0
+    }
+
+    /// Get a slice of the [`SecretKey`] bytes
+    pub fn as_bytes(&self) -> &[u8; KEY_SIZE] {
+        &self.0
     }
 }
 
@@ -264,8 +270,8 @@ impl Drop for SecretKey {
 pub struct PublicKey([u8; KEY_SIZE]);
 
 impl PublicKey {
-    /// Borrow this public key as bytes.
-    pub fn as_bytes(&self) -> &[u8; 32] {
+    /// Get a slice of the [`PublicKey`] bytes
+    pub fn as_bytes(&self) -> &[u8; KEY_SIZE] {
         &self.0
     }
 }
