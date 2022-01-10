@@ -25,10 +25,25 @@ x25519-dalek = { version = "1", default-features = false }
 xsalsa20poly1305 = { version = "0.8", default-features = false, features = ["rand_core"] }
 zeroize = { version = ">=1, <1.5", default-features = false }
 
+[dependencies.serde_crate]
+package = "serde"
+optional = true
+version = "1"
+default-features = false
+
+[dev-dependencies]
+bincode = "1"
+rand = "0.8"
+
 [features]
 default = ["alloc", "u64_backend"]
+serde = ["serde_crate"]
 std = ["rand_core/std", "xsalsa20poly1305/std"]
 alloc = ["xsalsa20poly1305/alloc"]
 heapless = ["xsalsa20poly1305/heapless"]
 u32_backend = ["x25519-dalek/u32_backend"]
 u64_backend = ["x25519-dalek/u64_backend"]
+
+[package.metadata.docs.rs]
+features = ["serde"]
+rustdoc-args = ["--cfg", "docsrs"]
