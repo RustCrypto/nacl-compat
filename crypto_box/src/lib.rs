@@ -309,7 +309,7 @@ impl Serialize for PublicKey {
     where
         S: Serializer,
     {
-        <[u8]>::serialize(&self.0, serializer)
+        serializer.serialize_bytes(&self.0)
     }
 }
 
