@@ -320,6 +320,7 @@ impl<'de> Deserialize<'de> for PublicKey {
     where
         D: Deserializer<'de>,
     {
+        use core::convert::TryInto;
         use serde_crate::de::{Error, SeqAccess, Visitor};
 
         struct PublicKeyVisitor;
@@ -346,9 +347,20 @@ impl<'de> Deserialize<'de> for PublicKey {
                 }
                 Ok(PublicKey::from(key_bytes))
             }
+
+            fn visit_bytes<E>(self, bytes: &[u8]) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                // Convert to array (with length check)
+                let array: [u8; KEY_SIZE] = bytes
+                    .try_into()
+                    .map_err(|_| Error::invalid_length(bytes.len(), &self))?;
+                Ok(PublicKey::from(array))
+            }
         }
 
-        deserializer.deserialize_seq(PublicKeyVisitor)
+        deserializer.deserialize_bytes(PublicKeyVisitor)
     }
 }
 
