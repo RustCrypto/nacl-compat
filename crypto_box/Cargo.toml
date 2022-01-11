@@ -34,6 +34,7 @@ default-features = false
 [dev-dependencies]
 bincode = "1"
 rand = "0.8"
+rmp-serde = "0.15"
 
 [features]
 default = ["alloc", "u64_backend"]

@@ -490,13 +490,21 @@ mod tests {
         // Create public key
         let public_key = PublicKey::from(public_key_bytes);
 
-        // Round-trip serialize
+        // Round-trip serialize with bincode
         let serialized =
             bincode::serialize(&public_key).expect("Public key could not be serialized");
         let deserialized: PublicKey =
             bincode::deserialize(&serialized).expect("Public key could not be deserialized");
+        assert_eq!(
+            deserialized, public_key,
+            "Deserialized public key does not match original"
+        );
 
-        // Deserialized public key should equal the original public key
+        // Round-trip serialize with rmp (msgpack)
+        let serialized =
+            rmp_serde::to_vec_named(&public_key).expect("Public key could not be serialized");
+        let deserialized: PublicKey =
+            rmp_serde::from_slice(&serialized).expect("Public key could not be deserialized");
         assert_eq!(
             deserialized, public_key,
             "Deserialized public key does not match original"
