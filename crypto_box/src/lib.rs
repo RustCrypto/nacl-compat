@@ -320,18 +320,35 @@ impl<'de> Deserialize<'de> for PublicKey {
     where
         D: Deserializer<'de>,
     {
-        use core::convert::TryInto;
-        use serde_crate::de::Error;
+        use serde_crate::de::{Error, SeqAccess, Visitor};
 
-        // Deserialize slice
-        let slice = <&[u8]>::deserialize(deserializer)?;
+        struct PublicKeyVisitor;
 
-        // Convert to array (with length check)
-        let array: [u8; KEY_SIZE] = slice
-            .try_into()
-            .map_err(|_| Error::invalid_length(slice.len(), &"a 32-byte public key"))?;
+        impl<'de> Visitor<'de> for PublicKeyVisitor {
+            type Value = PublicKey;
 
-        Ok(PublicKey::from(array))
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                formatter.write_str("a 32-byte public key")
+            }
+
+            fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
+            where
+                S: SeqAccess<'de>,
+            {
+                let mut key_bytes = [0; KEY_SIZE];
+                for i in 0..KEY_SIZE {
+                    key_bytes[i] = match seq.next_element()? {
+                        Some(val) => val,
+                        None => {
+                            return Err(Error::invalid_length(i - 1, &self));
+                        }
+                    }
+                }
+                Ok(PublicKey::from(key_bytes))
+            }
+        }
+
+        deserializer.deserialize_seq(PublicKeyVisitor)
     }
 }
 
