@@ -207,6 +207,12 @@ use xsalsa20poly1305::aead::{
 use xsalsa20poly1305::XSalsa20Poly1305;
 use zeroize::{Zeroize, Zeroizing};
 
+#[cfg(feature = "serde")]
+use serde_crate::{
+    de::{Deserialize, Deserializer},
+    ser::{Serialize, Serializer},
+};
+
 /// Size of a `crypto_box` public or secret key in bytes.
 pub const KEY_SIZE: usize = 32;
 
@@ -215,7 +221,7 @@ pub const KEY_SIZE: usize = 32;
 /// Implemented as an alias for [`GenericArray`].
 pub type Tag = GenericArray<u8, U16>;
 
-/// `crypto_box` secret key
+/// A `crypto_box` secret key.
 #[derive(Clone)]
 pub struct SecretKey([u8; KEY_SIZE]);
 
@@ -265,7 +271,9 @@ impl Drop for SecretKey {
     }
 }
 
-/// `crypto_box` public key
+/// A `crypto_box` public key.
+///
+/// This type can be serialized if the `serde` feature is enabled.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct PublicKey([u8; KEY_SIZE]);
 
@@ -291,6 +299,68 @@ impl From<&SecretKey> for PublicKey {
 impl From<[u8; KEY_SIZE]> for PublicKey {
     fn from(bytes: [u8; KEY_SIZE]) -> PublicKey {
         PublicKey(bytes)
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl Serialize for PublicKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bytes(&self.0)
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl<'de> Deserialize<'de> for PublicKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use core::convert::TryInto;
+        use serde_crate::de::{Error, SeqAccess, Visitor};
+
+        struct PublicKeyVisitor;
+
+        impl<'de> Visitor<'de> for PublicKeyVisitor {
+            type Value = PublicKey;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                formatter.write_str("a 32-byte public key")
+            }
+
+            fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
+            where
+                S: SeqAccess<'de>,
+            {
+                let mut key_bytes = [0; KEY_SIZE];
+                for i in 0..KEY_SIZE {
+                    key_bytes[i] = match seq.next_element()? {
+                        Some(val) => val,
+                        None => {
+                            return Err(Error::invalid_length(i - 1, &self));
+                        }
+                    }
+                }
+                Ok(PublicKey::from(key_bytes))
+            }
+
+            fn visit_bytes<E>(self, bytes: &[u8]) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                // Convert to array (with length check)
+                let array: [u8; KEY_SIZE] = bytes
+                    .try_into()
+                    .map_err(|_| Error::invalid_length(bytes.len(), &self))?;
+                Ok(PublicKey::from(array))
+            }
+        }
+
+        deserializer.deserialize_bytes(PublicKeyVisitor)
     }
 }
 
@@ -415,3 +485,41 @@ impl ChaChaBox {
 }
 
 impl_aead_in_place!(ChaChaBox, U24, U16, U0);
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    #[cfg(feature = "serde")]
+    fn test_public_key_serialization() {
+        use super::PublicKey;
+        use rand_core::RngCore;
+
+        // Random PK bytes
+        let mut public_key_bytes = [0; 32];
+        let mut rng = rand::thread_rng();
+        rng.fill_bytes(&mut public_key_bytes);
+
+        // Create public key
+        let public_key = PublicKey::from(public_key_bytes);
+
+        // Round-trip serialize with bincode
+        let serialized =
+            bincode::serialize(&public_key).expect("Public key could not be serialized");
+        let deserialized: PublicKey =
+            bincode::deserialize(&serialized).expect("Public key could not be deserialized");
+        assert_eq!(
+            deserialized, public_key,
+            "Deserialized public key does not match original"
+        );
+
+        // Round-trip serialize with rmp (msgpack)
+        let serialized =
+            rmp_serde::to_vec_named(&public_key).expect("Public key could not be serialized");
+        let deserialized: PublicKey =
+            rmp_serde::from_slice(&serialized).expect("Public key could not be deserialized");
+        assert_eq!(
+            deserialized, public_key,
+            "Deserialized public key does not match original"
+        );
+    }
+}
