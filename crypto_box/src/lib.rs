@@ -189,6 +189,7 @@
     html_root_url = "https://docs.rs/crypto_box/0.7.1"
 )]
 #![warn(missing_docs, rust_2018_idioms)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub use rand_core;
 pub use xsalsa20poly1305::{aead, generate_nonce};
