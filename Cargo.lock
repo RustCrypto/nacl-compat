@@ -144,7 +144,7 @@ name = "crypto_kx"
 version = "0.0.2"
 dependencies = [
  "blake2",
- "getrandom 0.2.3",
+ "getrandom 0.2.4",
  "rand_core 0.6.3",
  "serde",
  "sodiumoxide",
@@ -157,7 +157,7 @@ version = "0.0.1"
 dependencies = [
  "aead",
  "chacha20",
- "getrandom 0.2.3",
+ "getrandom 0.2.4",
  "poly1305",
  "rand_core 0.6.3",
  "sodiumoxide",
@@ -231,9 +231,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fcd999463524c52659517fe2cea98493cfe485d10565e7b0fb07dbba7ad2753"
+checksum = "418d37c8b1d42553c93648be529cb70f920d3baf8ef469b74b9638df426e0b4c"
 dependencies = [
  "cfg-if",
  "js-sys",
@@ -406,7 +406,7 @@ version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
- "getrandom 0.2.3",
+ "getrandom 0.2.4",
 ]
 
 [[package]]
