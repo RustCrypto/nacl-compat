@@ -40,6 +40,6 @@ dual licensed as above, without any additional terms or conditions.
 [deps-image]: https://deps.rs/repo/github/RustCrypto/nacl-compat/status.svg
 [deps-link]: https://deps.rs/repo/github/RustCrypto/nacl-compat
 [//]: # "general links"
-[nacl]: http://https://nacl.cr.yp.to
-[libsodium]: http://https://doc.libsodium.org
-[tweetnacl]: http://https://tweetnacl.cr.yp.to
+[nacl]: https://nacl.cr.yp.to
+[libsodium]: https://doc.libsodium.org
+[tweetnacl]: https://tweetnacl.cr.yp.to
