@@ -11,7 +11,7 @@
 //! To obtain this shared secret, Diffie-Hellman can be used, which works as follows:
 //! Suppose both Alice and Betty know the public key of each other.
 //! Then they use their private key and the other's public key to generate a
-//! secret. This secret is the same for both Alice and Betty, as desscribed by
+//! secret. This secret is the same for both Alice and Betty, as described by
 //! the Diffie-Hellman algorithm.
 //! No eavesdropper can know what the secret is, as they only know the public keys, but
 //! not the private keys.

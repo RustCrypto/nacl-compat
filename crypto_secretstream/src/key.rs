@@ -4,7 +4,7 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::errors::InvalidLength;
 
-/// Symetric key used by [`crate::PushStream`] and [`crate::PullStream`].
+/// Symmetric key used by [`crate::PushStream`] and [`crate::PullStream`].
 pub struct Key(chacha20::Key);
 
 impl Key {

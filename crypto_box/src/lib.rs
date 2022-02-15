@@ -100,7 +100,7 @@
 //! # }
 //! ```
 //!
-//! ## Choosing `ChaChaBox` vs `SalasaBox`
+//! ## Choosing `ChaChaBox` vs `SalsaBox`
 //!
 //! Currently, `crypto_box::Box` is default to use `xsalsa20poly1305` which doesn't support non-empty associated data
 //! field. To specify customized AD, you can use `crypto_box::ChaChaBox` instead.
