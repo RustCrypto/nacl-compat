@@ -38,6 +38,11 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features u32_backend
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features u32_backend,heapless
 
+  minimal-versions:
+    uses: RustCrypto/actions/.github/workflows/minimal-versions.yml@master
+    with:
+        working-directory: ${{ github.workflow }}
+
   test:
     runs-on: ubuntu-latest
     strategy:
