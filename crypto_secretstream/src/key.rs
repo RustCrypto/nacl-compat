@@ -1,8 +1,7 @@
-use core::convert::TryFrom;
-
-use rand_core::{CryptoRng, RngCore};
+//! `crypto_secretstream` keys.
 
 use crate::errors::InvalidLength;
+use rand_core::{CryptoRng, RngCore};
 
 /// Symmetric key used by [`crate::PushStream`] and [`crate::PullStream`].
 pub struct Key(chacha20::Key);

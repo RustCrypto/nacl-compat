@@ -13,6 +13,18 @@ env:
   RUSTFLAGS: "-Dwarnings"
 
 jobs:
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.56.0
+          components: clippy
+          override: true
+          profile: minimal
+      - run: cargo clippy --all -- -D warnings
+
   rustfmt:
     runs-on: ubuntu-latest
     steps:
@@ -27,14 +39,3 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
-  clippy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.51.0
-          components: clippy
-          override: true
-          profile: minimal
-      - run: cargo clippy --all -- -D warnings

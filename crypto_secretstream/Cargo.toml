@@ -1,12 +1,11 @@
 [package]
 name = "crypto_secretstream"
-version = "0.0.1" # Also update html_root_url in lib.rs when bumping this
+version = "0.1.0-pre" # Also update html_root_url in lib.rs when bumping this
 description = """
 Pure Rust implementation of libsodium's crypto_secretstream secret-key using
 ChaCha20 and Poly1305
 """
 authors = ["C4DT", "RustCrypto Developers"]
-edition = "2018"
 license = "Apache-2.0 OR MIT"
 readme = "README.md"
 documentation = "https://docs.rs/crypto_secretstream"
@@ -14,6 +13,8 @@ homepage = "https://github.com/RustCrypto/nacl-compat"
 repository = "https://github.com/RustCrypto/nacl-compat/tree/master/crypto_secretstream"
 categories = ["cryptography"]
 keywords = ["nacl", "libsodium", "public-key", "chacha20", "poly1305"]
+edition = "2021"
+rust-version = "1.56"
 
 [dependencies]
 aead = { version = "0.4", features = ["stream"] }

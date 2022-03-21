@@ -321,7 +321,6 @@ impl<'de> Deserialize<'de> for PublicKey {
     where
         D: Deserializer<'de>,
     {
-        use core::convert::TryInto;
         use serde_crate::de::{Error, SeqAccess, Visitor};
 
         struct PublicKeyVisitor;

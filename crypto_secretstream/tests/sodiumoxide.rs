@@ -42,15 +42,10 @@ fn pushed_can_be_pulled() {
 #[test]
 #[cfg(feature = "alloc")]
 fn pulled_can_be_pushed() {
-    use core::convert::TryFrom;
-
     let key = reference::gen_key();
-
     let (mut push_stream, header) = reference::Stream::init_push(&key).expect("create Stream");
-
     let header = Header::try_from(header.as_ref()).expect("same header size");
     let key = Key::try_from(key.as_ref()).expect("same key size");
-
     let mut pull_stream = PullStream::init(header, &key);
 
     MESSAGES.iter().for_each(|(message, tag, additional_data)| {

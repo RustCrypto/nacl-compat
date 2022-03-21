@@ -1,4 +1,4 @@
-use core::convert::TryFrom;
+//! Public key type.
 
 use crate::errors::InvalidLength;
 
