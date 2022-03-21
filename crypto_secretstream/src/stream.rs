@@ -1,4 +1,4 @@
-use core::convert::TryFrom;
+//! Core `crypto_secretstream` construction.
 
 use aead::{AeadCore, AeadInPlace, Buffer, Result};
 use chacha20::{
@@ -13,6 +13,7 @@ use chacha20::{
     },
     hchacha, ChaCha20, R20,
 };
+use core::mem;
 use poly1305::{
     universal_hash::{NewUniversalHash, Output, UniversalHash},
     Poly1305,
@@ -278,9 +279,7 @@ impl AeadInPlace for Stream {
         cipher
             .try_apply_keystream(&mut tag_block)
             .map_err(|_| aead::Error)?;
-        let tag = tag_block[0];
-        tag_block[0] = buffer[0];
-        buffer[0] = tag;
+        mem::swap(&mut tag_block[0], &mut buffer[0]);
 
         // compute mac and reject if not matching
         let mac_output =

@@ -1,13 +1,12 @@
 [package]
 name = "crypto_box"
-version = "0.7.1" # Also update html_root_url in lib.rs when bumping this
+version = "0.8.0-pre" # Also update html_root_url in lib.rs when bumping this
 description = """
 Pure Rust implementation of NaCl's crypto_box public-key authenticated
 encryption primitive which combines the X25519 Elliptic Curve Diffie-Hellman
 function and the XSalsa20Poly1305 authenticated encryption cipher
 """
 authors = ["RustCrypto Developers"]
-edition = "2018"
 license = "Apache-2.0 OR MIT"
 readme = "README.md"
 documentation = "https://docs.rs/crypto_box"
@@ -15,6 +14,8 @@ homepage = "https://github.com/RustCrypto/nacl-compat"
 repository = "https://github.com/RustCrypto/nacl-compat/tree/master/crypto_box"
 categories = ["cryptography", "no-std"]
 keywords = ["nacl", "libsodium", "public-key", "x25519", "xsalsa20poly1305"]
+edition = "2021"
+rust-version = "1.56"
 
 [dependencies]
 chacha20 = { version = "0.8", features = ["expose-core", "hchacha"] }

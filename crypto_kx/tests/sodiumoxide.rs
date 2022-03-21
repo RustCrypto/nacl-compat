@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+//! sodiumoxide interop tests.
 
 use crypto_kx::*;
 use rand_core::OsRng;

@@ -1,8 +1,7 @@
-use core::convert::TryFrom;
-
-use rand_core::{CryptoRng, RngCore};
+//! Secret key type.
 
 use crate::errors::InvalidLength;
+use rand_core::{CryptoRng, RngCore};
 
 /// [`SecretKey`] that should be kept private.
 #[derive(Clone)]

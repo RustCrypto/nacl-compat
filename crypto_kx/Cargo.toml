@@ -1,9 +1,8 @@
 [package]
 name = "crypto_kx"
-version = "0.0.2" # Also update html_root_url in lib.rs when bumping this
+version = "0.1.0-pre" # Also update html_root_url in lib.rs when bumping this
 description = "Pure Rust implementation of libsodium's crypto_kx using BLAKE2"
 authors = ["C4DT", "RustCrypto Developers"]
-edition = "2018"
 license = "Apache-2.0 OR MIT"
 readme = "README.md"
 documentation = "https://docs.rs/crypto_kx"
@@ -11,6 +10,8 @@ homepage = "https://github.com/RustCrypto/nacl-compat"
 repository = "https://github.com/RustCrypto/nacl-compat/tree/master/crypto_kx"
 categories = ["cryptography", "no-std"]
 keywords = ["nacl", "libsodium", "public-key", "blake2"]
+edition = "2021"
+rust-version = "1.56"
 
 [dependencies]
 blake2 = { version = "0.10", default-features = false }

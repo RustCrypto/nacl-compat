@@ -1,3 +1,5 @@
+//! Key types.
+
 mod public;
 mod secret;
 mod session;

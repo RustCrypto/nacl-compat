@@ -1,15 +1,14 @@
-use core::convert::TryFrom;
-
-use chacha20::cipher::{
-    consts::U24,
-    generic_array::{sequence::Split, GenericArray},
-};
-use rand_core::{CryptoRng, RngCore};
+//! `crypto_secretstream` headers.
 
 use super::{
     errors::InvalidLength,
     nonce::{HChaCha20Nonce, Nonce},
 };
+use chacha20::cipher::{
+    consts::U24,
+    generic_array::{sequence::Split, GenericArray},
+};
+use rand_core::{CryptoRng, RngCore};
 
 /// Header of the secret stream, can be sent as cleartext.
 #[derive(Clone, Copy)]
