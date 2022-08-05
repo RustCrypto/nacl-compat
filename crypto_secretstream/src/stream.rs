@@ -1,21 +1,24 @@
 //! Core `crypto_secretstream` construction.
 
-use aead::{AeadCore, AeadInPlace, Buffer, Result};
+use aead::{AeadCore, AeadInPlace, Buffer, KeyInit, Result};
 use chacha20::{
     cipher::{
-        consts::U16,
+        consts::{U10, U16},
         generic_array::{
             functional::FunctionalSequence,
             sequence::{Concat, Split},
             GenericArray,
         },
-        NewCipher, StreamCipher, StreamCipherSeek,
+        KeyIvInit, StreamCipher, StreamCipherSeek,
     },
-    hchacha, ChaCha20, R20,
+    hchacha, ChaCha20,
 };
-use core::mem;
+use core::{mem, slice};
 use poly1305::{
-    universal_hash::{NewUniversalHash, Output, UniversalHash},
+    universal_hash::{
+        crypto_common::{BlockSizeUser, IvSizeUser},
+        UniversalHash,
+    },
     Poly1305,
 };
 use rand_core::{CryptoRng, RngCore};
@@ -41,7 +44,7 @@ impl Stream {
         let (hchacha20_nonce, nonce) = header.split();
 
         Self {
-            key: hchacha::<R20>(key.as_array(), &hchacha20_nonce),
+            key: hchacha::<U10>(key.as_array(), &hchacha20_nonce),
             nonce,
             counter: 1,
         }
@@ -50,7 +53,7 @@ impl Stream {
     /// Create a cipher and its related MAC key for the current round.
     fn get_cipher_and_mac(
         &self,
-        cipher_nonce: &chacha20::Nonce,
+        cipher_nonce: &aead::Nonce<Self>,
     ) -> Result<(ChaCha20, poly1305::Key)> {
         let mut cipher = ChaCha20::new(&self.key, cipher_nonce);
 
@@ -87,7 +90,7 @@ impl Stream {
         associated_data: &[u8],
         tag_block: [u8; TAG_BLOCK_SIZE],
         ciphertext: &[u8],
-    ) -> Output<Poly1305> {
+    ) -> poly1305::Tag {
         let mut mac = Poly1305::new(mac_key);
 
         // pad block error in libsodium, see 290197ba
@@ -105,7 +108,7 @@ impl Stream {
         let chunks = ciphertext.chunks_exact(MAC_BLOCK_SIZE);
         let remaining_ciphertext = chunks.remainder();
         for block in chunks {
-            mac.update(poly1305::Block::from_slice(block))
+            mac.update(slice::from_ref(poly1305::Block::from_slice(block)))
         }
 
         // compute the last blocks: remaining_ciphertext + padding error + size_block
@@ -214,9 +217,9 @@ impl PullStream {
 }
 
 impl AeadCore for Stream {
-    type NonceSize = <ChaCha20 as NewCipher>::NonceSize;
-    type TagSize = <Poly1305 as UniversalHash>::BlockSize;
-    type CiphertextOverhead = <Poly1305 as UniversalHash>::BlockSize;
+    type NonceSize = <ChaCha20 as IvSizeUser>::IvSize;
+    type TagSize = <Poly1305 as BlockSizeUser>::BlockSize;
+    type CiphertextOverhead = <Poly1305 as BlockSizeUser>::BlockSize;
 }
 
 // here, `buffer` is understood as already containing the message's tag
@@ -254,8 +257,7 @@ impl AeadInPlace for Stream {
             .map_err(|_| aead::Error)?;
 
         // compute and append mac
-        let mac_output =
-            Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer[1..]).into_bytes();
+        let mac_output = Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer[1..]);
 
         Ok(mac_output)
     }
@@ -282,8 +284,7 @@ impl AeadInPlace for Stream {
         mem::swap(&mut tag_block[0], &mut buffer[0]);
 
         // compute mac and reject if not matching
-        let mac_output =
-            Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer[1..]).into_bytes();
+        let mac_output = Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer[1..]);
         if bool::from(!mac_output.ct_eq(mac)) {
             return Err(aead::Error);
         }
