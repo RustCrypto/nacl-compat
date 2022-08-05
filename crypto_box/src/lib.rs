@@ -192,18 +192,18 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub use rand_core;
-pub use xsalsa20poly1305::{aead, generate_nonce};
+pub use xsalsa20poly1305::{aead, Nonce};
 
 use chacha20::hchacha;
 use chacha20poly1305::XChaCha20Poly1305;
 use core::fmt::{self, Debug};
 use rand_core::{CryptoRng, RngCore};
-use salsa20::hsalsa20;
+use salsa20::hsalsa;
 use x25519_dalek::{x25519, X25519_BASEPOINT_BYTES};
 use xsalsa20poly1305::aead::{
-    consts::{U0, U16, U24},
+    consts::{U0, U10, U16, U24},
     generic_array::GenericArray,
-    AeadCore, AeadInPlace, Buffer, Error, NewAead,
+    AeadCore, AeadInPlace, Buffer, Error, KeyInit,
 };
 use xsalsa20poly1305::XSalsa20Poly1305;
 use zeroize::{Zeroize, Zeroizing};
@@ -438,7 +438,7 @@ impl SalsaBox {
         let shared_secret = Zeroizing::new(x25519(secret_key.0, public_key.0));
 
         // Use HSalsa20 to create a uniformly random key from the shared secret
-        let mut key = hsalsa20(
+        let mut key = hsalsa::<U10>(
             GenericArray::from_slice(&*shared_secret),
             &GenericArray::default(),
         );
@@ -472,7 +472,7 @@ impl ChaChaBox {
         let shared_secret = Zeroizing::new(x25519(secret_key.0, public_key.0));
 
         // Use HChaCha20 to create a uniformly random key from the shared secret
-        let mut key = hchacha::<chacha20::R20>(
+        let mut key = hchacha::<U10>(
             GenericArray::from_slice(&*shared_secret),
             &GenericArray::default(),
         );
@@ -485,6 +485,16 @@ impl ChaChaBox {
 }
 
 impl_aead_in_place!(ChaChaBox, U24, U16, U0);
+
+/// Generate a random nonce: every message MUST have a unique nonce!
+///
+/// Do *NOT* ever reuse the same nonce for two messages!
+pub fn generate_nonce<T>(csprng: &mut T) -> Nonce
+where
+    T: RngCore + CryptoRng,
+{
+    XSalsa20Poly1305::generate_nonce(csprng)
+}
 
 #[cfg(test)]
 mod tests {
