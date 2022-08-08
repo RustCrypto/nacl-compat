@@ -26,11 +26,8 @@ x25519-dalek = { version = "1", default-features = false }
 xsalsa20poly1305 = { version = "0.9", default-features = false, features = ["rand_core"] }
 zeroize = { version = "1", default-features = false }
 
-[dependencies.serde_crate]
-package = "serde"
-optional = true
-version = "1"
-default-features = false
+# optional dependencies
+serdect = { version = "0.1", optional = true, default-features = false }
 
 [dev-dependencies]
 bincode = "1"
@@ -39,7 +36,7 @@ rmp-serde = "1"
 
 [features]
 default = ["alloc", "u64_backend"]
-serde = ["serde_crate"]
+serde = ["serdect"]
 std = ["rand_core/std", "xsalsa20poly1305/std"]
 alloc = ["xsalsa20poly1305/alloc"]
 heapless = ["xsalsa20poly1305/heapless"]
