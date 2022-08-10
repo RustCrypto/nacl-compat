@@ -40,7 +40,7 @@
 //! # {
 //! use crypto_box::{
 //!     aead::{Aead, AeadCore, OsRng},
-//!     Box, PublicKey, SecretKey
+//!     SalsaBox, PublicKey, SecretKey
 //! };
 //!
 //! //
@@ -62,12 +62,12 @@
 //!    0x67, 0x8a, 0x53, 0x78, 0x9d, 0x92, 0xc7, 0x54,
 //! ]);
 //!
-//! // Create a `Box` by performing Diffie-Hellman key agreement between
+//! // Create a `SalsaBox` by performing Diffie-Hellman key agreement between
 //! // the two keys.
-//! let alice_box = Box::new(&bob_public_key, &alice_secret_key);
+//! let alice_box = SalsaBox::new(&bob_public_key, &alice_secret_key);
 //!
 //! // Get a random nonce to encrypt the message under
-//! let nonce = Box::generate_nonce(&mut OsRng);
+//! let nonce = SalsaBox::generate_nonce(&mut OsRng);
 //!
 //! // Message to encrypt
 //! let plaintext = b"Top secret message we're encrypting";
@@ -91,9 +91,9 @@
 //! // Deserialize Alice's public key from bytes
 //! let alice_public_key = PublicKey::from(alice_public_key_bytes);
 //!
-//! // Bob can compute the same Box as Alice by performing the reciprocal
-//! // key exchange operation.
-//! let bob_box = Box::new(&alice_public_key, &bob_secret_key);
+//! // Bob can compute the same `SalsaBox` as Alice by performing the
+//! // key agreement operation.
+//! let bob_box = SalsaBox::new(&alice_public_key, &bob_secret_key);
 //!
 //! // Decrypt the message, using the same randomly generated nonce
 //! let decrypted_plaintext = bob_box.decrypt(&nonce, &ciphertext[..]).unwrap();
@@ -104,8 +104,11 @@
 //!
 //! ## Choosing `ChaChaBox` vs `SalsaBox`
 //!
-//! Currently, `crypto_box::Box` is default to use `xsalsa20poly1305` which doesn't support non-empty associated data
-//! field. To specify customized AD, you can use `crypto_box::ChaChaBox` instead.
+//! The `crypto_box` construction was originally specified using `SalsaBox`.
+//!
+//! However, the newer `ChaChaBox` construction is also available, which
+//! provides marginally better security and additional features such as
+//! additional associated data:
 //!
 //! ```rust
 //! # #[cfg(all(feature = "getrandom", feature = "std"))]
@@ -378,9 +381,6 @@ macro_rules! impl_aead_in_place {
         }
     };
 }
-
-/// Alias for [`SalsaBox`].
-pub type Box = SalsaBox;
 
 /// Public-key encryption scheme based on the [X25519] Elliptic Curve
 /// Diffie-Hellman function and the [XSalsa20Poly1305] authenticated encryption
