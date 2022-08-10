@@ -36,9 +36,12 @@
 //! [feature](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features).
 //!
 //! ```rust
-//! # #[cfg(feature = "std")]
+//! # #[cfg(all(feature = "getrandom", feature = "std"))]
 //! # {
-//! use crypto_box::{Box, PublicKey, SecretKey, aead::Aead};
+//! use crypto_box::{
+//!     aead::{Aead, AeadCore, OsRng},
+//!     Box, PublicKey, SecretKey
+//! };
 //!
 //! //
 //! // Encryption
@@ -46,8 +49,7 @@
 //!
 //! // Generate a random secret key.
 //! // NOTE: The secret key bytes can be accessed by calling `secret_key.as_bytes()`
-//! let mut rng = crypto_box::rand_core::OsRng;
-//! let alice_secret_key = SecretKey::generate(&mut rng);
+//! let alice_secret_key = SecretKey::generate(&mut OsRng);
 //!
 //! // Get the public key for the secret key we just generated
 //! let alice_public_key_bytes = alice_secret_key.public_key().as_bytes().clone();
@@ -65,7 +67,7 @@
 //! let alice_box = Box::new(&bob_public_key, &alice_secret_key);
 //!
 //! // Get a random nonce to encrypt the message under
-//! let nonce = crypto_box::generate_nonce(&mut rng);
+//! let nonce = Box::generate_nonce(&mut OsRng);
 //!
 //! // Message to encrypt
 //! let plaintext = b"Top secret message we're encrypting";
@@ -106,12 +108,14 @@
 //! field. To specify customized AD, you can use `crypto_box::ChaChaBox` instead.
 //!
 //! ```rust
-//! # #[cfg(feature = "std")]
+//! # #[cfg(all(feature = "getrandom", feature = "std"))]
 //! # {
-//! use crypto_box::{ChaChaBox, PublicKey, SecretKey, aead::{Aead, Payload}};
+//! use crypto_box::{
+//!     aead::{Aead, AeadCore, Payload, OsRng},
+//!     ChaChaBox, PublicKey, SecretKey
+//! };
 //!
-//! let mut rng = crypto_box::rand_core::OsRng;
-//! let alice_secret_key = SecretKey::generate(&mut rng);
+//! let alice_secret_key = SecretKey::generate(&mut OsRng);
 //! let alice_public_key_bytes = alice_secret_key.public_key().as_bytes().clone();
 //! let bob_public_key = PublicKey::from([
 //!    0xe8, 0x98, 0xc, 0x86, 0xe0, 0x32, 0xf1, 0xeb,
@@ -120,7 +124,7 @@
 //!    0x67, 0x8a, 0x53, 0x78, 0x9d, 0x92, 0xc7, 0x54,
 //! ]);
 //! let alice_box = ChaChaBox::new(&bob_public_key, &alice_secret_key);
-//! let nonce = crypto_box::generate_nonce(&mut rng);
+//! let nonce = ChaChaBox::generate_nonce(&mut OsRng);
 //!
 //! // Message to encrypt
 //! let plaintext = b"Top secret message we're encrypting".as_ref();
@@ -191,8 +195,8 @@
 #![warn(missing_docs, rust_2018_idioms)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-pub use rand_core;
-pub use xsalsa20poly1305::{aead, Nonce};
+pub use aead::{self, rand_core};
+pub use xsalsa20poly1305::Nonce;
 
 use chacha20::hchacha;
 use chacha20poly1305::XChaCha20Poly1305;
@@ -446,23 +450,13 @@ impl ChaChaBox {
 
 impl_aead_in_place!(ChaChaBox, U24, U16, U0);
 
-/// Generate a random nonce: every message MUST have a unique nonce!
-///
-/// Do *NOT* ever reuse the same nonce for two messages!
-pub fn generate_nonce<T>(csprng: &mut T) -> Nonce
-where
-    T: RngCore + CryptoRng,
-{
-    XSalsa20Poly1305::generate_nonce(csprng)
-}
-
 #[cfg(test)]
 mod tests {
     #[cfg(feature = "serde")]
     #[test]
     fn test_public_key_serialization() {
         use super::PublicKey;
-        use rand_core::RngCore;
+        use aead::rand_core::RngCore;
 
         // Random PK bytes
         let mut public_key_bytes = [0; 32];

@@ -3,10 +3,12 @@
 //! Adapted from PHP Sodium Compat's test vectors:
 //! <https://www.phpclasses.org/browse/file/122796.html>
 
-#![cfg(feature = "std")]
+#![cfg(all(feature = "getrandom", feature = "std"))]
 
-use crypto_box::aead::{generic_array::GenericArray, Aead, AeadInPlace, Payload};
-use crypto_box::{ChaChaBox, PublicKey, SalsaBox, SecretKey};
+use crypto_box::{
+    aead::{generic_array::GenericArray, Aead, AeadInPlace, OsRng, Payload},
+    ChaChaBox, PublicKey, SalsaBox, SecretKey,
+};
 use std::any::TypeId;
 
 // Alice's keypair
@@ -48,7 +50,7 @@ const PLAINTEXT: &[u8] = &[
 
 #[test]
 fn generate_secret_key() {
-    SecretKey::generate(&mut rand_core::OsRng);
+    SecretKey::generate(&mut OsRng);
 }
 
 #[test]
