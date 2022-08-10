@@ -190,13 +190,15 @@
 //! [`heapless::Vec`]: https://docs.rs/heapless/latest/heapless/struct.Vec.html
 
 #![no_std]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg",
-    html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg",
-    html_root_url = "https://docs.rs/crypto_box/0.7.1"
+    html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg"
 )]
 #![warn(missing_docs, rust_2018_idioms)]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+
+#[cfg(not(any(target_pointer_width = "32", target_pointer_width = "64")))]
+compile_error!("`crypto-box` requires either a 32-bit or 64-bit target");
 
 pub use aead::{self, rand_core};
 pub use xsalsa20poly1305::Nonce;
