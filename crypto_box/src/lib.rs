@@ -1,43 +1,16 @@
-//! Pure Rust implementation of the [`crypto_box`] public-key authenticated
-//! encryption scheme from [NaCl]-family libraries (e.g. libsodium, TweetNaCl)
-//! which combines the [X25519] Diffie-Hellman function and the
-//! [XSalsa20Poly1305] authenticated encryption cipher into an Elliptic Curve
-//! Integrated Encryption Scheme ([ECIES]).
+#![no_std]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg",
+    html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg"
+)]
+#![warn(missing_docs, rust_2018_idioms)]
+
+//! ## Usage
 //!
-//! # Introduction
-//!
-//! Imagine Alice wants something valuable shipped to her. Because it's
-//! valuable, she wants to make sure it arrives securely (i.e. hasn't been
-//! opened or tampered with) and that it's not a forgery (i.e. it's actually
-//! from the sender she's expecting it to be from and nobody's pulling the old
-//! switcheroo).
-//!
-//! One way she can do this is by providing the sender (let's call him Bob)
-//! with a high-security box of her choosing. She provides Bob with this box,
-//! and something else: a padlock, but a padlock without a key. Alice is
-//! keeping that key all to herself. Bob can put items in the box then put the
-//! padlock onto it, but once the padlock snaps shut, the box cannot be opened
-//! by anyone who doesn't have Alice's private key.
-//!
-//! Here's the twist though, Bob also puts a padlock onto the box. This padlock
-//! uses a key Bob has published to the world, such that if you have one of
-//! Bob's keys, you know a box came from him because Bob's keys will open Bob's
-//! padlocks (let's imagine a world where padlocks cannot be forged even if you
-//! know the key). Bob then sends the box to Alice.
-//!
-//! In order for Alice to open the box, she needs two keys: her private key
-//! that opens her own padlock, and Bob's well-known key. If Bob's key doesn't
-//! open the second padlock then Alice knows that this is not the box she was
-//! expecting from Bob, it's a forgery.
-//!
-//! # Usage
-//!
-//! NOTE: The following examples assume use of the `std`
-//! [feature](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features).
-//!
-//! ```rust
-//! # #[cfg(all(feature = "getrandom", feature = "std"))]
-//! # {
+#![cfg_attr(all(feature = "getrandom", feature = "std"), doc = "```")]
+#![cfg_attr(not(all(feature = "getrandom", feature = "std")), doc = "```ignore")]
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use crypto_box::{
 //!     aead::{Aead, AeadCore, OsRng},
 //!     SalsaBox, PublicKey, SecretKey
@@ -73,7 +46,7 @@
 //! let plaintext = b"Top secret message we're encrypting";
 //!
 //! // Encrypt the message using the box
-//! let ciphertext = alice_box.encrypt(&nonce, &plaintext[..]).unwrap();
+//! let ciphertext = alice_box.encrypt(&nonce, &plaintext[..])?;
 //!
 //! //
 //! // Decryption
@@ -96,23 +69,24 @@
 //! let bob_box = SalsaBox::new(&alice_public_key, &bob_secret_key);
 //!
 //! // Decrypt the message, using the same randomly generated nonce
-//! let decrypted_plaintext = bob_box.decrypt(&nonce, &ciphertext[..]).unwrap();
+//! let decrypted_plaintext = bob_box.decrypt(&nonce, &ciphertext[..])?;
 //!
 //! assert_eq!(&plaintext[..], &decrypted_plaintext[..]);
+//! # Ok(())
 //! # }
 //! ```
 //!
-//! ## Choosing `ChaChaBox` vs `SalsaBox`
+//! ## Choosing [`ChaChaBox`] vs [`SalsaBox`]
 //!
-//! The `crypto_box` construction was originally specified using `SalsaBox`.
+//! The `crypto_box` construction was originally specified using [`SalsaBox`].
 //!
-//! However, the newer `ChaChaBox` construction is also available, which
+//! However, the newer [`ChaChaBox`] construction is also available, which
 //! provides marginally better security and additional features such as
 //! additional associated data:
 //!
-//! ```rust
-//! # #[cfg(all(feature = "getrandom", feature = "std"))]
-//! # {
+#![cfg_attr(all(feature = "getrandom", feature = "std"), doc = "```")]
+#![cfg_attr(not(all(feature = "getrandom", feature = "std")), doc = "```ignore")]
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use crypto_box::{
 //!     aead::{Aead, AeadCore, Payload, OsRng},
 //!     ChaChaBox, PublicKey, SecretKey
@@ -159,7 +133,8 @@
 //! }).unwrap();
 //!
 //! assert_eq!(&plaintext[..], &decrypted_plaintext[..]);
-//! }
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ## In-place Usage (eliminates `alloc` requirement)
@@ -188,14 +163,6 @@
 //! [XSalsa20Poly1305]: https://nacl.cr.yp.to/secretbox.html
 //! [ECIES]: https://en.wikipedia.org/wiki/Integrated_Encryption_Scheme
 //! [`heapless::Vec`]: https://docs.rs/heapless/latest/heapless/struct.Vec.html
-
-#![no_std]
-#![cfg_attr(docsrs, feature(doc_cfg))]
-#![doc(
-    html_logo_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg",
-    html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg"
-)]
-#![warn(missing_docs, rust_2018_idioms)]
 
 #[cfg(not(any(target_pointer_width = "32", target_pointer_width = "64")))]
 compile_error!("`crypto-box` requires either a 32-bit or 64-bit target");
