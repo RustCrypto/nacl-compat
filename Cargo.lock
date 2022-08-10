@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "aead"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae06cea71059b6b79d879afcdd237a33ac61afc052fdd605815e6f3916254abf"
+checksum = "5c192eb8f11fc081b0fe4259ba5af04217d4e0faddd02417310a927911abd7c8"
 dependencies = [
  "crypto-common",
  "generic-array",
@@ -98,9 +98,9 @@ dependencies = [
 
 [[package]]
 name = "chacha20poly1305"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7d6e4974f4531e7674f7bde1fdda79802e5151e7a87580b7a282403f1648f75"
+checksum = "10cd79432192d1c0f4e1a0fef9527696cc039165d729fb41b3f4f4f354c2dc35"
 dependencies = [
  "aead",
  "chacha20",
@@ -144,11 +144,11 @@ dependencies = [
 name = "crypto_box"
 version = "0.8.0-pre"
 dependencies = [
+ "aead",
  "bincode",
  "chacha20",
  "chacha20poly1305",
  "rand",
- "rand_core 0.6.3",
  "rmp-serde",
  "salsa20",
  "serdect",
