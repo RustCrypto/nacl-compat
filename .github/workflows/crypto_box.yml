@@ -3,6 +3,7 @@ name: crypto_box
 on:
   pull_request:
     paths:
+      - ".github/workflows/crypto_box.yml"
       - "crypto_box/**"
       - "Cargo.*"
   push:
@@ -55,3 +56,26 @@ jobs:
       - run: cargo test --release --no-default-features
       - run: cargo test --release
       - run: cargo test --release --all-features
+
+  cross:
+    strategy:
+      matrix:
+        include:
+          - target: armv7-unknown-linux-gnueabihf
+            rust: stable
+          - target: aarch64-unknown-linux-gnu
+            rust: stable
+          - target: powerpc-unknown-linux-gnu
+            rust: stable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: ${{ matrix.deps }}
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+          override: true
+      - run: cargo install cross
+      - run: cross test --release --target ${{ matrix.target }} --all-features
