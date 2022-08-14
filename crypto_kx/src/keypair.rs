@@ -4,12 +4,6 @@ use rand_core::{CryptoRng, RngCore};
 use crate::{ClientSessionKeys, PublicKey, SecretKey, ServerSessionKeys, SessionKey};
 
 /// A [`SecretKey`] with its related [`PublicKey`].
-#[derive(Clone)]
-#[cfg_attr(
-    feature = "serde",
-    derive(our_serde::Deserialize, our_serde::Serialize)
-)]
-#[cfg_attr(feature = "serde", serde(crate = "our_serde"))]
 pub struct KeyPair {
     secret: SecretKey,
     public: PublicKey,

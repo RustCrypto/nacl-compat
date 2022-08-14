@@ -3,13 +3,11 @@
 use crate::errors::InvalidLength;
 use rand_core::{CryptoRng, RngCore};
 
+#[cfg(feature = "serde")]
+use serdect::serde::{de, ser, Deserialize, Serialize};
+
 /// [`SecretKey`] that should be kept private.
 #[derive(Clone)]
-#[cfg_attr(
-    feature = "serde",
-    derive(our_serde::Deserialize, our_serde::Serialize)
-)]
-#[cfg_attr(feature = "serde", serde(crate = "our_serde"))]
 pub struct SecretKey(x25519_dalek::StaticSecret);
 
 impl SecretKey {
@@ -54,5 +52,27 @@ impl TryFrom<&[u8]> for SecretKey {
         array.copy_from_slice(slice);
 
         Ok(Self::from(array))
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for SecretKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        serdect::array::serialize_hex_upper_or_bin(&self.0.to_bytes(), serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for SecretKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        let mut bytes = [0u8; Self::BYTES];
+        serdect::array::deserialize_hex_or_bin(&mut bytes, deserializer)?;
+        Self::try_from(&bytes[..]).map_err(de::Error::custom)
     }
 }

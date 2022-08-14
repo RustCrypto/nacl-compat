@@ -164,7 +164,7 @@ dependencies = [
  "blake2",
  "getrandom 0.2.7",
  "rand_core 0.6.3",
- "serde",
+ "serdect",
  "sodiumoxide",
  "x25519-dalek",
 ]
@@ -191,7 +191,6 @@ dependencies = [
  "byteorder",
  "digest 0.9.0",
  "rand_core 0.5.1",
- "serde",
  "subtle",
  "zeroize",
 ]
@@ -492,20 +491,6 @@ name = "serde"
 version = "1.0.136"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce31e24b01e1e524df96f1c2fdd054405f8d7376249a5110886fb4b658484789"
-dependencies = [
- "serde_derive",
-]
-
-[[package]]
-name = "serde_derive"
-version = "1.0.136"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08597e7152fcd306f41838ed3e37be9eaeed2b61c42e2117266a554fab4662f9"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
 
 [[package]]
 name = "serdect"
@@ -723,7 +708,6 @@ checksum = "5a0c105152107e3b96f6a00a65e86ce82d9b125230e1c4302940eca58ff71f4f"
 dependencies = [
  "curve25519-dalek",
  "rand_core 0.5.1",
- "serde",
  "zeroize",
 ]
 
