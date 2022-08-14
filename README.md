@@ -1,7 +1,6 @@
 # RustCrypto: compatibility layer for NaCl-family libraries
 
 [![Project Chat][chat-image]][chat-link]
-[![dependency status][deps-image]][deps-link]
 
 Pure Rust implementation of APIs from [NaCl]-family libraries
 (e.g. [libsodium], [TweetNaCl]).
@@ -37,8 +36,7 @@ dual licensed as above, without any additional terms or conditions.
 [//]: # "badges"
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#all_messages
-[deps-image]: https://deps.rs/repo/github/RustCrypto/nacl-compat/status.svg
-[deps-link]: https://deps.rs/repo/github/RustCrypto/nacl-compat
+
 [//]: # "general links"
 [nacl]: https://nacl.cr.yp.to
 [libsodium]: https://doc.libsodium.org
