@@ -1,6 +1,6 @@
 [package]
 name = "crypto_kx"
-version = "0.1.0-pre"
+version = "0.1.0"
 description = "Pure Rust implementation of libsodium's crypto_kx using BLAKE2"
 authors = ["C4DT", "RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
