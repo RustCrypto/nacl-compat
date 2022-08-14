@@ -17,13 +17,14 @@ rust-version = "1.56"
 blake2 = { version = "0.10", default-features = false }
 rand_core = "0.6"
 
+[target.'cfg(target_pointer_width = "32")'.dependencies]
+x25519-dalek = { version = "1", default-features = false, features = ["u32_backend"] }
+
+[target.'cfg(target_pointer_width = "64")'.dependencies]
+x25519-dalek = { version = "1", default-features = false, features = ["u64_backend"] }
+
 # optional dependencies
 serdect = { version = "0.1", optional = true, default-features = false }
-
-[dependencies.x25519-dalek]
-version = "1"
-default-features = false
-features = ["u64_backend"] # to allow --no-default-features
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 getrandom = { version = "0.2", default-features = false, features = ["js"] }
