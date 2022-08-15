@@ -164,9 +164,6 @@
 //! [ECIES]: https://en.wikipedia.org/wiki/Integrated_Encryption_Scheme
 //! [`heapless::Vec`]: https://docs.rs/heapless/latest/heapless/struct.Vec.html
 
-#[cfg(not(any(target_pointer_width = "32", target_pointer_width = "64")))]
-compile_error!("`crypto-box` requires either a 32-bit or 64-bit target");
-
 pub use aead::{self, rand_core};
 pub use xsalsa20poly1305::Nonce;
 
