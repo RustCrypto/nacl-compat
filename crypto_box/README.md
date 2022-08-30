@@ -40,6 +40,12 @@ that opens her own padlock, and Bob's well-known key. If Bob's key doesn't
 open the second padlock then Alice knows that this is not the box she was
 expecting from Bob, it's a forgery.
 
+## Security Notes
+
+This crate has received one [security audit by Cure53][audit-2022] (version
+0.7.1), with no significant findings. We would like to thank [Threema][threema]
+for funding the audit.
+
 ## License
 
 Licensed under either of:
@@ -75,3 +81,5 @@ dual licensed as above, without any additional terms or conditions.
 [X25519]: https://cr.yp.to/ecdh.html
 [XSalsa20Poly1305]: https://github.com/RustCrypto/AEADs/tree/master/xsalsa20poly1305
 [ECIES]: https://en.wikipedia.org/wiki/Integrated_Encryption_Scheme
+[audit-2022]: https://cure53.de/pentest-report_rust-libs_2022.pdf
+[threema]: https://threema.ch/
