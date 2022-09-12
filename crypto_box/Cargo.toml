@@ -19,6 +19,7 @@ rust-version = "1.56"
 
 [dependencies]
 aead = { version = "0.5.1", default-features = false }
+blake2 = { version = "0.10", default-features = false, optional = true }
 chacha20 = "0.9"
 chacha20poly1305 = { version = "0.10.1", default-features = false, features = ["rand_core"] }
 salsa20 = "0.10"
@@ -42,9 +43,10 @@ alloc = ["aead/alloc"]
 getrandom = ["aead/getrandom", "rand_core"]
 heapless = ["aead/heapless"]
 rand_core = ["aead/rand_core"]
+seal = ["blake2", "std"]
 u32_backend = ["x25519-dalek/u32_backend"]
 u64_backend = ["x25519-dalek/u64_backend"]
 
 [package.metadata.docs.rs]
-features = ["serde"]
+features = ["serde", "seal"]
 rustdoc-args = ["--cfg", "docsrs"]
