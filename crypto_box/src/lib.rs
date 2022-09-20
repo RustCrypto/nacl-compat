@@ -1,4 +1,4 @@
-#![cfg_attr(not(feature = "std"), no_std)]
+#![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg",
@@ -180,6 +180,12 @@ use xsalsa20poly1305::aead::{
 };
 use xsalsa20poly1305::XSalsa20Poly1305;
 use zeroize::{Zeroize, Zeroizing};
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
+#[cfg(feature = "seal")]
+use alloc::vec::Vec;
 
 #[cfg(feature = "serde")]
 use serdect::serde::{de, ser, Deserialize, Serialize};
