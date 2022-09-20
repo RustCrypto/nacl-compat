@@ -181,7 +181,7 @@ use xsalsa20poly1305::aead::{
 use xsalsa20poly1305::XSalsa20Poly1305;
 use zeroize::{Zeroize, Zeroizing};
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "seal")]
 extern crate alloc;
 
 #[cfg(feature = "seal")]
