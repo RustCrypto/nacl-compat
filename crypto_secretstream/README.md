@@ -22,7 +22,7 @@ one that can't be read or modified by anyone else.
 One way she can do this is by first agreeing with Bob on a shared secret
 key (such as one generated via a key exchange protocol), then she opens a
 normal/unsafe channel of communication and sends her messages, encrypted
-under this shared key. Then, when Bob receives theses messages, he can
+under this shared key. Then, when Bob receives these messages, he can
 decrypt each one and the mere knowledge of this shared key ensures that it
 was indeed sent by Alice.
 

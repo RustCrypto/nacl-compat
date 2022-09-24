@@ -30,7 +30,7 @@ use crate::{header::Header, Key, Tag};
 const MAC_BLOCK_SIZE: usize = 16;
 const TAG_BLOCK_SIZE: usize = 16 * 4;
 
-/// AEAD for libsodium's secretstream. Better to use [`PushStream`] & [`PullStream`] as theses
+/// AEAD for libsodium's secretstream. Better to use [`PushStream`] & [`PullStream`] as these
 /// take care of rekeying and computing the next nonce.
 pub struct Stream {
     key: chacha20::Key,
