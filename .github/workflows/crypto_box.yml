@@ -56,6 +56,7 @@ jobs:
       - run: cargo test --release --features std
       - run: cargo test --release --features std,heapless
       - run: cargo test --release --features std,serde
+      - run: cargo test --release --features std,seal
 
   cross:
     strategy:
@@ -78,4 +79,4 @@ jobs:
           target: ${{ matrix.target }}
           override: true
       - run: cargo install cross
-      - run: cross test --release --target ${{ matrix.target }} --features std,serde
+      - run: cross test --release --target ${{ matrix.target }} --features std,serde,seal

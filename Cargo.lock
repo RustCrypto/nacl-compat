@@ -146,6 +146,7 @@ version = "0.8.1"
 dependencies = [
  "aead",
  "bincode",
+ "blake2",
  "chacha20",
  "chacha20poly1305",
  "rand",
