@@ -98,8 +98,9 @@ impl Stream {
 
         // compute size block
         let mut size_block = [0u8; MAC_BLOCK_SIZE];
-        size_block[..8].copy_from_slice(&associated_data.len().to_le_bytes());
-        size_block[8..].copy_from_slice(&(TAG_BLOCK_SIZE + ciphertext.len()).to_le_bytes());
+        size_block[..8].copy_from_slice(&(associated_data.len() as u64).to_le_bytes());
+        size_block[8..]
+            .copy_from_slice(&(TAG_BLOCK_SIZE as u64 + ciphertext.len() as u64).to_le_bytes());
 
         mac.update_padded(associated_data); // blind with associated data
         mac.update_padded(&tag_block); // do not any add padding
