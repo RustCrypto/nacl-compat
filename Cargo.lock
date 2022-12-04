@@ -240,6 +240,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "crypto_secretbox"
+version = "0.0.0"
+dependencies = [
+ "aead",
+ "poly1305",
+ "salsa20",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
 name = "crypto_secretstream"
 version = "0.1.1"
 dependencies = [
