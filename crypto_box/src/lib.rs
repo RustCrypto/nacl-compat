@@ -200,6 +200,10 @@ pub type Tag = GenericArray<u8, U16>;
 #[cfg(feature = "seal")]
 const TAG_SIZE: usize = 16;
 
+#[cfg(feature = "seal")]
+/// Extra bytes for the ciphertext of a `crypto_box_seal` compared to the plaintext
+pub const SEALBYTES: usize = KEY_SIZE + TAG_SIZE;
+
 /// A `crypto_box` secret key.
 #[derive(Clone)]
 pub struct SecretKey([u8; KEY_SIZE]);

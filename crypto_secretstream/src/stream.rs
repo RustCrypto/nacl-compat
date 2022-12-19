@@ -39,6 +39,9 @@ pub struct Stream {
 }
 
 impl Stream {
+    /// Extra bytes per message compared to the plaintext
+    pub const ABYTES: usize = MAC_BLOCK_SIZE + 1;
+
     /// Create a new [`Stream`].
     pub fn init(key: &Key, header: Header) -> Self {
         let (hchacha20_nonce, nonce) = header.split();
