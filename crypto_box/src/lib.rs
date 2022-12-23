@@ -165,20 +165,20 @@
 //! [`heapless::Vec`]: https://docs.rs/heapless/latest/heapless/struct.Vec.html
 
 pub use aead::{self, rand_core};
-pub use xsalsa20poly1305::Nonce;
+pub use crypto_secretbox::Nonce;
 
-use chacha20::hchacha;
-use chacha20poly1305::XChaCha20Poly1305;
-use core::fmt::{self, Debug};
-use rand_core::{CryptoRng, RngCore};
-use salsa20::hsalsa;
-use x25519_dalek::{x25519, X25519_BASEPOINT_BYTES};
-use xsalsa20poly1305::aead::{
+use aead::{
     consts::{U0, U10, U16, U24},
     generic_array::GenericArray,
     AeadCore, AeadInPlace, Buffer, Error, KeyInit,
 };
-use xsalsa20poly1305::XSalsa20Poly1305;
+use chacha20::hchacha;
+use chacha20poly1305::XChaCha20Poly1305;
+use core::fmt::{self, Debug};
+use crypto_secretbox::XSalsa20Poly1305;
+use rand_core::{CryptoRng, RngCore};
+use salsa20::hsalsa;
+use x25519_dalek::{x25519, X25519_BASEPOINT_BYTES};
 use zeroize::{Zeroize, Zeroizing};
 
 #[cfg(feature = "seal")]
