@@ -121,7 +121,7 @@ use aead::{
 };
 use poly1305::Poly1305;
 use salsa20::{
-    cipher::{KeyIvInit, StreamCipher, StreamCipherSeek},
+    cipher::{KeyIvInit, StreamCipher},
     XSalsa20,
 };
 use zeroize::Zeroize;
@@ -153,7 +153,6 @@ impl XSalsa20Poly1305 {
     /// Generate a random nonce: every message MUST have a unique nonce!
     ///
     /// Do *NOT* ever reuse the same nonce for two messages!
-    // TODO(tarcieri): remove this in favor of `AeadCore::generate_nonce`
     #[cfg(feature = "rand_core")]
     #[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
     pub fn generate_nonce<T>(csprng: &mut T) -> Nonce
@@ -212,8 +211,15 @@ impl AeadInPlace for XSalsa20Poly1305 {
         associated_data: &[u8],
         buffer: &mut [u8],
     ) -> Result<Tag, Error> {
-        Cipher::new(XSalsa20::new(&self.key, nonce))
-            .encrypt_in_place_detached(associated_data, buffer)
+        // AAD unsupported
+        if !associated_data.is_empty() {
+            return Err(Error);
+        }
+
+        let mut cipher = XSalsa20::new(&self.key, nonce);
+        let mac = init_poly1305(&mut cipher);
+        cipher.apply_keystream(buffer);
+        Ok(mac.compute_unpadded(buffer))
     }
 
     fn decrypt_in_place(
@@ -249,11 +255,22 @@ impl AeadInPlace for XSalsa20Poly1305 {
         buffer: &mut [u8],
         tag: &Tag,
     ) -> Result<(), Error> {
-        Cipher::new(XSalsa20::new(&self.key, nonce)).decrypt_in_place_detached(
-            associated_data,
-            buffer,
-            tag,
-        )
+        // AAD unsupported
+        if !associated_data.is_empty() {
+            return Err(Error);
+        }
+
+        let mut cipher = XSalsa20::new(&self.key, nonce);
+        let expected_tag = init_poly1305(&mut cipher).compute_unpadded(buffer);
+
+        // This performs a constant-time comparison using the `subtle` crate
+        use subtle::ConstantTimeEq;
+        if expected_tag.ct_eq(tag).into() {
+            cipher.apply_keystream(buffer);
+            Ok(())
+        } else {
+            Err(Error)
+        }
     }
 }
 
@@ -263,67 +280,13 @@ impl Drop for XSalsa20Poly1305 {
     }
 }
 
-/// Salsa20Poly1305 instantiated with a particular nonce
-pub(crate) struct Cipher<C>
-where
-    C: StreamCipher + StreamCipherSeek,
-{
-    cipher: C,
-    mac: Poly1305,
-}
+/// Derive Poly1305 key from the first 32-bytes of the keystream.
+fn init_poly1305<C: StreamCipher>(cipher: &mut C) -> Poly1305 {
+    let mut mac_key = poly1305::Key::default();
+    cipher.apply_keystream(&mut *mac_key);
 
-impl<C> Cipher<C>
-where
-    C: StreamCipher + StreamCipherSeek,
-{
-    /// Instantiate the underlying cipher with a particular nonce
-    pub(crate) fn new(mut cipher: C) -> Self {
-        // Derive Poly1305 key from the first 32-bytes of the Salsa20 keystream
-        let mut mac_key = poly1305::Key::default();
-        cipher.apply_keystream(&mut *mac_key);
-        let mac = Poly1305::new(GenericArray::from_slice(&*mac_key));
-        mac_key.zeroize();
+    let mac = Poly1305::new(&mac_key);
+    mac_key.zeroize();
 
-        Self { cipher, mac }
-    }
-
-    /// Encrypt the given message in-place, returning the authentication tag
-    pub(crate) fn encrypt_in_place_detached(
-        mut self,
-        associated_data: &[u8],
-        buffer: &mut [u8],
-    ) -> Result<Tag, Error> {
-        // XSalsa20Poly1305 doesn't support AAD
-        if !associated_data.is_empty() {
-            return Err(Error);
-        }
-
-        self.cipher.apply_keystream(buffer);
-        Ok(self.mac.compute_unpadded(buffer))
-    }
-
-    /// Decrypt the given message, first authenticating ciphertext integrity
-    /// and returning an error if it's been tampered with.
-    pub(crate) fn decrypt_in_place_detached(
-        mut self,
-        associated_data: &[u8],
-        buffer: &mut [u8],
-        tag: &Tag,
-    ) -> Result<(), Error> {
-        // XSalsa20Poly1305 doesn't support AAD
-        if !associated_data.is_empty() {
-            return Err(Error);
-        }
-
-        use subtle::ConstantTimeEq;
-        let expected_tag = self.mac.compute_unpadded(buffer);
-
-        // This performs a constant-time comparison using the `subtle` crate
-        if expected_tag.ct_eq(tag).into() {
-            self.cipher.apply_keystream(buffer);
-            Ok(())
-        } else {
-            Err(Error)
-        }
-    }
+    mac
 }
