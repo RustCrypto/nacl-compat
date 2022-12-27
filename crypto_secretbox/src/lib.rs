@@ -14,7 +14,7 @@
 #![cfg_attr(not(all(feature = "getrandom", feature = "std")), doc = "```ignore")]
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use crypto_secretbox::{
-//!     aead::{Aead, KeyInit, OsRng},
+//!     aead::{Aead, AeadCore, KeyInit, OsRng},
 //!     XSalsa20Poly1305, Nonce
 //! };
 //!
@@ -53,7 +53,7 @@
 )]
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use crypto_secretbox::{
-//!     aead::{AeadInPlace, KeyInit, OsRng, heapless::Vec},
+//!     aead::{AeadCore, AeadInPlace, KeyInit, OsRng, heapless::Vec},
 //!     XSalsa20Poly1305, Nonce,
 //! };
 //!
@@ -81,7 +81,7 @@
 //! # #[cfg(feature = "heapless")]
 //! # {
 //! use crypto_secretbox::XSalsa20Poly1305;
-//! use crypto_secretbox::aead::{AeadInPlace, KeyInit, generic_array::GenericArray};
+//! use crypto_secretbox::aead::{AeadCore, AeadInPlace, KeyInit, generic_array::GenericArray};
 //! use crypto_secretbox::aead::heapless::Vec;
 //!
 //! let key = GenericArray::from_slice(b"an example very very secret key.");
@@ -119,15 +119,13 @@ use aead::{
     generic_array::GenericArray,
     Buffer,
 };
+use core::marker::PhantomData;
 use poly1305::Poly1305;
 use salsa20::{
-    cipher::{KeyIvInit, StreamCipher},
+    cipher::{IvSizeUser, KeyIvInit, StreamCipher},
     XSalsa20,
 };
 use zeroize::Zeroize;
-
-#[cfg(feature = "rand_core")]
-use aead::rand_core::{CryptoRng, RngCore};
 
 /// Size of an XSalsa20Poly1305 key in bytes
 pub const KEY_SIZE: usize = 32;
@@ -141,47 +139,71 @@ pub const TAG_SIZE: usize = 16;
 /// Poly1305 tags
 pub type Tag = GenericArray<u8, U16>;
 
-/// **XSalsa20Poly1305** (a.k.a. NaCl `crypto_secretbox`) authenticated
-/// encryption cipher.
-#[derive(Clone)]
-pub struct XSalsa20Poly1305 {
-    /// Secret key
+/// `crypto_secretbox` instantiated with the XSalsa20 stream cipher.
+pub type XSalsa20Poly1305 = SecretBox<XSalsa20>;
+
+/// The NaCl `crypto_secretbox` authenticated symmetric encryption primitive,
+/// generic
+pub struct SecretBox<C> {
+    /// Secret key.
     key: Key,
+
+    /// Cipher.
+    cipher: PhantomData<C>,
 }
 
-impl XSalsa20Poly1305 {
-    /// Generate a random nonce: every message MUST have a unique nonce!
-    ///
-    /// Do *NOT* ever reuse the same nonce for two messages!
-    #[cfg(feature = "rand_core")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
-    pub fn generate_nonce<T>(csprng: &mut T) -> Nonce
-    where
-        T: RngCore + CryptoRng,
-    {
-        let mut nonce = [0u8; NONCE_SIZE];
-        csprng.fill_bytes(&mut nonce);
-        nonce.into()
+impl<C> SecretBox<C>
+where
+    C: KeyIvInit + KeySizeUser<KeySize = U32> + IvSizeUser<IvSize = U24> + StreamCipher,
+{
+    /// Initialize cipher instance and Poly1305 MAC.
+    fn init_cipher_and_mac(&self, nonce: &Nonce) -> (C, Poly1305) {
+        let mut cipher = C::new(&self.key, nonce);
+
+        // Derive Poly1305 key from the first 32-bytes of the keystream.
+        let mut mac_key = poly1305::Key::default();
+        cipher.apply_keystream(&mut mac_key);
+
+        let mac = Poly1305::new(&mac_key);
+        mac_key.zeroize();
+
+        (cipher, mac)
     }
 }
 
-impl KeySizeUser for XSalsa20Poly1305 {
+// Handwritten instead of derived to avoid `C: Clone` bound
+impl<C> Clone for SecretBox<C> {
+    fn clone(&self) -> Self {
+        Self {
+            key: self.key,
+            cipher: PhantomData,
+        }
+    }
+}
+
+impl<C> KeySizeUser for SecretBox<C> {
     type KeySize = U32;
 }
 
-impl KeyInit for XSalsa20Poly1305 {
+impl<C> KeyInit for SecretBox<C> {
     fn new(key: &Key) -> Self {
-        XSalsa20Poly1305 { key: *key }
+        SecretBox {
+            key: *key,
+            cipher: PhantomData,
+        }
     }
 }
 
-impl AeadCore for XSalsa20Poly1305 {
+impl<C> AeadCore for SecretBox<C> {
     type NonceSize = U24;
     type TagSize = U16;
     type CiphertextOverhead = U0;
 }
 
-impl AeadInPlace for XSalsa20Poly1305 {
+impl<C> AeadInPlace for SecretBox<C>
+where
+    C: KeyIvInit + KeySizeUser<KeySize = U32> + IvSizeUser<IvSize = U24> + StreamCipher,
+{
     fn encrypt_in_place(
         &self,
         nonce: &Nonce,
@@ -216,8 +238,7 @@ impl AeadInPlace for XSalsa20Poly1305 {
             return Err(Error);
         }
 
-        let mut cipher = XSalsa20::new(&self.key, nonce);
-        let mac = init_poly1305(&mut cipher);
+        let (mut cipher, mac) = self.init_cipher_and_mac(nonce);
         cipher.apply_keystream(buffer);
         Ok(mac.compute_unpadded(buffer))
     }
@@ -260,8 +281,8 @@ impl AeadInPlace for XSalsa20Poly1305 {
             return Err(Error);
         }
 
-        let mut cipher = XSalsa20::new(&self.key, nonce);
-        let expected_tag = init_poly1305(&mut cipher).compute_unpadded(buffer);
+        let (mut cipher, mac) = self.init_cipher_and_mac(nonce);
+        let expected_tag = mac.compute_unpadded(buffer);
 
         // This performs a constant-time comparison using the `subtle` crate
         use subtle::ConstantTimeEq;
@@ -274,19 +295,8 @@ impl AeadInPlace for XSalsa20Poly1305 {
     }
 }
 
-impl Drop for XSalsa20Poly1305 {
+impl<C> Drop for SecretBox<C> {
     fn drop(&mut self) {
         self.key.as_mut_slice().zeroize();
     }
-}
-
-/// Derive Poly1305 key from the first 32-bytes of the keystream.
-fn init_poly1305<C: StreamCipher>(cipher: &mut C) -> Poly1305 {
-    let mut mac_key = poly1305::Key::default();
-    cipher.apply_keystream(&mut *mac_key);
-
-    let mac = Poly1305::new(&mac_key);
-    mac_key.zeroize();
-
-    mac
 }
