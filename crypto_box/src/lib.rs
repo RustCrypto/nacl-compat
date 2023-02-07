@@ -257,7 +257,7 @@ impl Drop for SecretKey {
 /// A `crypto_box` public key.
 ///
 /// This type can be serialized if the `serde` feature is enabled.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct PublicKey([u8; KEY_SIZE]);
 
 impl PublicKey {
