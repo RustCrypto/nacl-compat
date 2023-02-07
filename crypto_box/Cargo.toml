@@ -1,6 +1,6 @@
 [package]
 name = "crypto_box"
-version = "0.8.2"
+version = "0.9.0-pre"
 description = """
 Pure Rust implementation of NaCl's crypto_box public-key authenticated
 encryption primitive which combines the X25519 Elliptic Curve Diffie-Hellman
@@ -15,15 +15,15 @@ repository = "https://github.com/RustCrypto/nacl-compat/tree/master/crypto_box"
 categories = ["cryptography", "no-std"]
 keywords = ["nacl", "libsodium", "public-key", "x25519", "xsalsa20poly1305"]
 edition = "2021"
-rust-version = "1.56"
+rust-version = "1.60"
 
 [dependencies]
 aead = { version = "0.5.1", default-features = false }
 chacha20 = "0.9"
 chacha20poly1305 = { version = "0.10.1", default-features = false, features = ["rand_core"] }
 crypto_secretbox = { version = "0", default-features = false, path = "../crypto_secretbox" }
+curve25519-dalek = { version = "4.0.0-rc.1", default-features = false, features = ["zeroize"] }
 salsa20 = "0.10"
-x25519-dalek = { version = "1", default-features = false }
 zeroize = { version = "1", default-features = false }
 
 # optional dependencies
@@ -36,7 +36,7 @@ rand = "0.8"
 rmp-serde = "1"
 
 [features]
-default = ["alloc", "getrandom", "u64_backend"]
+default = ["alloc", "getrandom"]
 std = ["aead/std"]
 serde = ["serdect"]
 alloc = ["aead/alloc"]
@@ -44,8 +44,6 @@ getrandom = ["aead/getrandom", "rand_core"]
 heapless = ["aead/heapless"]
 rand_core = ["aead/rand_core"]
 seal = ["alloc", "blake2"]
-u32_backend = ["x25519-dalek/u32_backend"]
-u64_backend = ["x25519-dalek/u64_backend"]
 
 [package.metadata.docs.rs]
 features = ["serde", "seal"]

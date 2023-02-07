@@ -176,9 +176,9 @@ use chacha20::hchacha;
 use chacha20poly1305::XChaCha20Poly1305;
 use core::fmt::{self, Debug};
 use crypto_secretbox::XSalsa20Poly1305;
+use curve25519_dalek::{MontgomeryPoint, Scalar};
 use rand_core::{CryptoRng, RngCore};
 use salsa20::hsalsa;
-use x25519_dalek::{x25519, X25519_BASEPOINT_BYTES};
 use zeroize::{Zeroize, Zeroizing};
 
 #[cfg(feature = "seal")]
@@ -206,7 +206,7 @@ pub const SEALBYTES: usize = KEY_SIZE + TAG_SIZE;
 
 /// A `crypto_box` secret key.
 #[derive(Clone)]
-pub struct SecretKey([u8; KEY_SIZE]);
+pub struct SecretKey(Scalar);
 
 impl SecretKey {
     /// Generate a random [`SecretKey`].
@@ -216,35 +216,34 @@ impl SecretKey {
     {
         let mut bytes = [0u8; KEY_SIZE];
         csprng.fill_bytes(&mut bytes);
-        SecretKey(bytes)
+        bytes.into()
     }
 
     /// Get the [`PublicKey`] which corresponds to this [`SecretKey`]
     pub fn public_key(&self) -> PublicKey {
-        PublicKey(x25519(self.0, X25519_BASEPOINT_BYTES))
+        PublicKey(MontgomeryPoint::mul_base(&self.0).to_bytes())
     }
 
-    #[deprecated(note = "use `as_bytes` instead")]
-    #[allow(missing_docs)]
+    /// Serialize [`SecretKey`] to bytes.
+    ///
+    /// # ⚠️Warning
+    ///
+    /// The serialized bytes are secret key material. Please treat them with
+    /// the care they deserve!
     pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
-        self.0
-    }
-
-    /// Get a slice of the [`SecretKey`] bytes
-    pub fn as_bytes(&self) -> &[u8; KEY_SIZE] {
-        &self.0
+        self.0.to_bytes()
     }
 }
 
 impl From<[u8; KEY_SIZE]> for SecretKey {
     fn from(bytes: [u8; KEY_SIZE]) -> SecretKey {
-        SecretKey(bytes)
+        SecretKey(Scalar::from_bits_clamped(bytes))
     }
 }
 
 impl Debug for SecretKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("SecretKey(...)")
+        f.debug_struct("SecretKey").finish_non_exhaustive()
     }
 }
 
@@ -261,20 +260,22 @@ impl Drop for SecretKey {
 pub struct PublicKey([u8; KEY_SIZE]);
 
 impl PublicKey {
-    /// Get a slice of the [`PublicKey`] bytes
-    pub fn as_bytes(&self) -> &[u8; KEY_SIZE] {
-        &self.0
-    }
-
     /// Create a public key from a slice. The bytes of the slice will be copied.
     ///
     /// This function will fail and return `None` if the length of the byte
     /// slice isn't exactly [`KEY_SIZE`].
     pub fn from_slice(slice: &[u8]) -> Option<Self> {
-        match slice.try_into() {
-            Ok(array) => Some(Self(array)),
-            Err(_) => None,
-        }
+        slice.try_into().map(PublicKey).ok()
+    }
+
+    /// Borrow the public key as bytes.
+    pub fn as_bytes(&self) -> &[u8; KEY_SIZE] {
+        &self.0
+    }
+
+    /// Serialize this public key as bytes.
+    pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
+        self.0
     }
 }
 
@@ -388,11 +389,11 @@ impl SalsaBox {
     /// Create a new [`SalsaBox`], performing X25519 Diffie-Hellman to derive
     /// a shared secret from the provided public and secret keys.
     pub fn new(public_key: &PublicKey, secret_key: &SecretKey) -> Self {
-        let shared_secret = Zeroizing::new(x25519(secret_key.0, public_key.0));
+        let shared_secret = Zeroizing::new(secret_key.0 * MontgomeryPoint(public_key.0));
 
         // Use HSalsa20 to create a uniformly random key from the shared secret
         let mut key = hsalsa::<U10>(
-            GenericArray::from_slice(&*shared_secret),
+            GenericArray::from_slice(&shared_secret.0),
             &GenericArray::default(),
         );
 
@@ -422,11 +423,11 @@ impl ChaChaBox {
     /// Create a new [`ChaChaBox`], performing X25519 Diffie-Hellman to derive
     /// a shared secret from the provided public and secret keys.
     pub fn new(public_key: &PublicKey, secret_key: &SecretKey) -> Self {
-        let shared_secret = Zeroizing::new(x25519(secret_key.0, public_key.0));
+        let shared_secret = Zeroizing::new(secret_key.0 * MontgomeryPoint(public_key.0));
 
         // Use HChaCha20 to create a uniformly random key from the shared secret
         let mut key = hchacha::<U10>(
-            GenericArray::from_slice(&*shared_secret),
+            GenericArray::from_slice(&shared_secret.0),
             &GenericArray::default(),
         );
 

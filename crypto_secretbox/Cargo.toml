@@ -13,7 +13,7 @@ documentation = "https://docs.rs/crypto_secretbox"
 repository = "https://github.com/RustCrypto/nacl-compat/tree/master/crypto_secretbox"
 keywords = ["aead", "salsa20", "poly1305", "xsalsa20"]
 categories = ["cryptography", "no-std"]
-rust-version = "1.56"
+rust-version = "1.60"
 
 [dependencies]
 aead = { version = "0.5", default-features = false }
