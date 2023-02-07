@@ -265,6 +265,17 @@ impl PublicKey {
     pub fn as_bytes(&self) -> &[u8; KEY_SIZE] {
         &self.0
     }
+
+    /// Create a public key from a slice. The bytes of the slice will be copied.
+    ///
+    /// This function will fail and return `None` if the length of the byte
+    /// slice isn't exactly [`KEY_SIZE`].
+    pub fn from_slice(slice: &[u8]) -> Option<Self> {
+        match slice.try_into() {
+            Ok(array) => Some(Self(array)),
+            Err(_) => None,
+        }
+    }
 }
 
 impl AsRef<[u8]> for PublicKey {
@@ -491,10 +502,11 @@ pub fn seal_open(recipient_sk: &SecretKey, ciphertext: &[u8]) -> Result<Vec<u8>,
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[cfg(feature = "serde")]
     #[test]
     fn test_public_key_serialization() {
-        use super::PublicKey;
         use aead::rand_core::RngCore;
 
         // Random PK bytes
@@ -514,5 +526,26 @@ mod tests {
         let serialized = rmp_serde::to_vec_named(&public_key).unwrap();
         let deserialized: PublicKey = rmp_serde::from_slice(&serialized).unwrap();
         assert_eq!(deserialized, public_key,);
+    }
+
+    #[test]
+    fn test_public_key_from_slice() {
+        let array = [0; 40];
+
+        // Returns None for empty array
+        assert!(PublicKey::from_slice(&[]).is_none());
+
+        // Returns None for length <32
+        for i in 1..=31 {
+            assert!(PublicKey::from_slice(&array[..i]).is_none());
+        }
+
+        // Succeeds for length 32
+        assert!(PublicKey::from_slice(&array[..32]).is_some());
+
+        // Returns None for length >32
+        for i in 33..=40 {
+            assert!(PublicKey::from_slice(&array[..i]).is_none());
+        }
     }
 }
