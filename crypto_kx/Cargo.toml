@@ -1,6 +1,6 @@
 [package]
 name = "crypto_kx"
-version = "0.1.0"
+version = "0.2.0-pre"
 description = "Pure Rust implementation of libsodium's crypto_kx using BLAKE2"
 authors = ["C4DT", "RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
@@ -11,7 +11,7 @@ repository = "https://github.com/RustCrypto/nacl-compat/tree/master/crypto_kx"
 categories = ["cryptography", "no-std"]
 keywords = ["nacl", "libsodium", "public-key", "blake2"]
 edition = "2021"
-rust-version = "1.56"
+rust-version = "1.60"
 
 [dependencies]
 blake2 = { version = "0.10", default-features = false }

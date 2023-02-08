@@ -68,7 +68,7 @@ dual licensed as above, without any additional terms or conditions.
 [docs-image]: https://docs.rs/crypto_box/badge.svg
 [docs-link]: https://docs.rs/crypto_box/
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.56+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.60+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260038-AEADs
 [build-image]: https://github.com/RustCrypto/nacl-compat/actions/workflows/crypto_box.yml/badge.svg
