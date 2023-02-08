@@ -4,17 +4,15 @@ use rand_core::{CryptoRng, RngCore};
 use crate::{ClientSessionKeys, PublicKey, SecretKey, ServerSessionKeys, SessionKey};
 
 /// A [`SecretKey`] with its related [`PublicKey`].
-pub struct KeyPair {
+pub struct Keypair {
     secret: SecretKey,
     public: PublicKey,
 }
 
-impl KeyPair {
-    /// Generate a new random [`KeyPair`].
+impl Keypair {
+    /// Generate a new random [`Keypair`].
     pub fn generate(csprng: impl RngCore + CryptoRng) -> Self {
-        let secret = SecretKey::generate(csprng);
-
-        Self::from(secret)
+        SecretKey::generate(csprng).into()
     }
 
     /// Get the contained [`PublicKey`].
@@ -27,7 +25,7 @@ impl KeyPair {
         &self.secret
     }
 
-    /// Consume the [`KeyPair`] to extract the contained [`SecretKey`] & [`PublicKey`].
+    /// Consume the [`Keypair`] to extract the contained [`SecretKey`] & [`PublicKey`].
     pub fn split(self) -> (PublicKey, SecretKey) {
         (self.public, self.secret)
     }
@@ -37,7 +35,6 @@ impl KeyPair {
     /// It's the implementation of libsodium's `crypto_kx_client_session_keys`.
     pub fn session_keys_to(&self, server_pk: &PublicKey) -> ClientSessionKeys {
         let (tx, rx) = self.gen_session_keys(server_pk, &self.public, server_pk);
-
         ClientSessionKeys { tx, rx }
     }
 
@@ -46,7 +43,6 @@ impl KeyPair {
     /// It's the implementation of libsodium's `crypto_kx_server_session_keys`.
     pub fn session_keys_from(&self, client_pk: &PublicKey) -> ServerSessionKeys {
         let (rx, tx) = self.gen_session_keys(client_pk, client_pk, &self.public);
-
         ServerSessionKeys { tx, rx }
     }
 
@@ -58,10 +54,8 @@ impl KeyPair {
     ) -> (SessionKey, SessionKey) {
         debug_assert!(other_pubkey == client_pk || other_pubkey == server_pk);
 
-        let shared_secret = self
-            .secret
-            .as_dalek()
-            .diffie_hellman(other_pubkey.as_dalek());
+        // Elliptic Curve Diffie-Hellman
+        let shared_secret = self.secret.0 * other_pubkey.0;
 
         let mut hasher = Blake2b512::new();
 
@@ -75,11 +69,9 @@ impl KeyPair {
     }
 }
 
-impl From<SecretKey> for KeyPair {
+impl From<SecretKey> for Keypair {
     fn from(secret: SecretKey) -> Self {
-        let public_dalek = x25519_dalek::PublicKey::from(secret.as_dalek());
-        let public = PublicKey::from(public_dalek.to_bytes());
-
+        let public = secret.public_key();
         Self { secret, public }
     }
 }
@@ -92,18 +84,16 @@ mod tests {
 
     #[test]
     fn from_secretkey_yield_same() {
-        let keypair = KeyPair::generate(&mut OsRng);
-
-        let reconstructed_keypair =
-            KeyPair::from(SecretKey::from(keypair.secret().as_dalek().to_bytes()));
+        let keypair = Keypair::generate(&mut OsRng);
+        let reconstructed_keypair = Keypair::from(SecretKey::from(keypair.secret().to_bytes()));
 
         assert_eq!(
             keypair.public().as_ref(),
             reconstructed_keypair.public().as_ref(),
         );
         assert_eq!(
-            keypair.secret().as_dalek().to_bytes(),
-            reconstructed_keypair.secret().as_dalek().to_bytes(),
+            keypair.secret().to_bytes(),
+            reconstructed_keypair.secret().to_bytes(),
         );
     }
 }
