@@ -8,7 +8,7 @@ use sodiumoxide::crypto::kx as reference;
 fn same_publickey_constructed_from_secretkey() {
     let keypair = reference::gen_keypair();
 
-    let reconstructed_keypair = KeyPair::from(
+    let reconstructed_keypair = Keypair::from(
         SecretKey::try_from(keypair.1.as_ref()).expect("parse reference's secret key"),
     );
 
@@ -18,7 +18,7 @@ fn same_publickey_constructed_from_secretkey() {
 #[test]
 fn same_client_keys() {
     let (client_pk, client_sk) = reference::gen_keypair();
-    let server = KeyPair::generate(OsRng);
+    let server = Keypair::generate(OsRng);
     let server_pk = server.public();
 
     let reference_keys = reference::client_session_keys(
@@ -28,7 +28,7 @@ fn same_client_keys() {
     )
     .expect("generate reference's session's keys");
 
-    let client = KeyPair::from(SecretKey::from(client_sk.0));
+    let client = Keypair::from(SecretKey::from(client_sk.0));
     let keys = client.session_keys_to(server_pk);
 
     assert_eq!(reference_keys.0.as_ref(), &keys.tx.as_ref()[..]);
@@ -37,7 +37,7 @@ fn same_client_keys() {
 
 #[test]
 fn same_server_keys() {
-    let server = KeyPair::generate(OsRng);
+    let server = Keypair::generate(OsRng);
     let (client_pk, _) = reference::gen_keypair();
 
     let reference_keys = reference::server_session_keys(

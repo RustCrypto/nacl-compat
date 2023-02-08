@@ -1,6 +1,7 @@
 //! Secret key type.
 
-use crate::errors::InvalidLength;
+use crate::{errors::InvalidLength, PublicKey};
+use curve25519_dalek::{MontgomeryPoint, Scalar};
 use rand_core::{CryptoRng, RngCore};
 
 #[cfg(feature = "serde")]
@@ -8,7 +9,7 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 
 /// [`SecretKey`] that should be kept private.
 #[derive(Clone)]
-pub struct SecretKey(x25519_dalek::StaticSecret);
+pub struct SecretKey(pub(crate) Scalar);
 
 impl SecretKey {
     /// Size in bytes of the [`SecretKey`].
@@ -18,25 +19,23 @@ impl SecretKey {
     pub fn generate(mut csprng: impl RngCore + CryptoRng) -> Self {
         let mut bytes = [0u8; Self::BYTES];
         csprng.fill_bytes(&mut bytes);
+        bytes.into()
+    }
 
-        let secret = x25519_dalek::StaticSecret::from(bytes);
-
-        Self(secret)
+    /// Get the public key that corresponds to this [`SecretKey`].
+    pub fn public_key(&self) -> PublicKey {
+        PublicKey(MontgomeryPoint::mul_base(&self.0))
     }
 
     /// Get the bytes serialization of this [`SecretKey`].
     pub fn to_bytes(&self) -> [u8; SecretKey::BYTES] {
         self.0.to_bytes()
     }
-
-    pub(crate) fn as_dalek(&self) -> &x25519_dalek::StaticSecret {
-        &self.0
-    }
 }
 
 impl From<[u8; SecretKey::BYTES]> for SecretKey {
     fn from(value: [u8; SecretKey::BYTES]) -> Self {
-        Self(value.into())
+        Self(Scalar::from_bits_clamped(value))
     }
 }
 
@@ -44,14 +43,9 @@ impl TryFrom<&[u8]> for SecretKey {
     type Error = InvalidLength;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != Self::BYTES {
-            return Err(InvalidLength::new(Self::BYTES, slice.len()));
-        }
-
-        let mut array = [0u8; SecretKey::BYTES];
-        array.copy_from_slice(slice);
-
-        Ok(Self::from(array))
+        <[u8; SecretKey::BYTES]>::try_from(slice)
+            .map(Into::into)
+            .map_err(|_| InvalidLength::new(Self::BYTES, slice.len()))
     }
 }
 

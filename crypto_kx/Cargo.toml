@@ -15,16 +15,11 @@ rust-version = "1.60"
 
 [dependencies]
 blake2 = { version = "0.10", default-features = false }
+curve25519-dalek = { version = "4.0.0-rc.1", default-features = false, features = ["zeroize"] }
 rand_core = "0.6"
 
 # optional dependencies
 serdect = { version = "0.1", optional = true, default-features = false }
-
-[target.'cfg(target_pointer_width = "32")'.dependencies]
-x25519-dalek = { version = "1", default-features = false, features = ["u32_backend"] }
-
-[target.'cfg(target_pointer_width = "64")'.dependencies]
-x25519-dalek = { version = "1", default-features = false, features = ["u64_backend"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 getrandom = { version = "0.2", default-features = false, features = ["js"] }
@@ -35,4 +30,4 @@ sodiumoxide = "0.2"
 
 [features]
 serde = ["serdect"]
-std = ["blake2/std", "rand_core/std", "x25519-dalek/std"]
+std = ["blake2/std", "rand_core/std"]
