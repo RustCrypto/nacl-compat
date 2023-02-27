@@ -19,7 +19,7 @@ curve25519-dalek = { version = "4.0.0-rc.1", default-features = false, features 
 rand_core = "0.6"
 
 # optional dependencies
-serdect = { version = "0.1", optional = true, default-features = false }
+serdect = { version = "0.2", optional = true, default-features = false }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 getrandom = { version = "0.2", default-features = false, features = ["js"] }
