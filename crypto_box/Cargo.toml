@@ -28,7 +28,7 @@ zeroize = { version = "1", default-features = false }
 
 # optional dependencies
 blake2 = { version = "0.10", optional = true, default-features = false }
-serdect = { version = "0.1", optional = true, default-features = false }
+serdect = { version = "0.2", optional = true, default-features = false }
 
 [dev-dependencies]
 bincode = "1"
