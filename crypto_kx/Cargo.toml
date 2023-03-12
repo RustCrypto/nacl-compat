@@ -31,3 +31,7 @@ sodiumoxide = "0.2"
 [features]
 serde = ["serdect"]
 std = ["blake2/std", "rand_core/std"]
+
+[package.metadata.docs.rs]
+features = ["serde", "seal"]
+rustdoc-args = ["--cfg", "docsrs"]
