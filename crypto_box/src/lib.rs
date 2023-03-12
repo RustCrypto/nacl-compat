@@ -1,5 +1,5 @@
 #![no_std]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg"
@@ -316,7 +316,6 @@ impl Ord for PublicKey {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl Serialize for PublicKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -327,7 +326,6 @@ impl Serialize for PublicKey {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de> Deserialize<'de> for PublicKey {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -473,7 +471,6 @@ fn get_seal_nonce(ephemeral_pk: &PublicKey, recipient_pk: &PublicKey) -> Nonce {
 ///
 /// [libsodium "sealed boxes"]: https://doc.libsodium.org/public-key_cryptography/sealed_boxes
 #[cfg(feature = "seal")]
-#[cfg_attr(docsrs, doc(cfg(feature = "seal")))]
 pub fn seal<T>(
     csprng: &mut T,
     recipient_pk: &PublicKey,
@@ -505,7 +502,6 @@ where
 ///
 /// [libsodium "sealed boxes"]: https://doc.libsodium.org/public-key_cryptography/sealed_boxes
 #[cfg(feature = "seal")]
-#[cfg_attr(docsrs, doc(cfg(feature = "seal")))]
 pub fn seal_open(recipient_sk: &SecretKey, ciphertext: &[u8]) -> Result<Vec<u8>, aead::Error> {
     if ciphertext.len() <= KEY_SIZE {
         return Err(aead::Error);
