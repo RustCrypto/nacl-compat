@@ -127,15 +127,6 @@ use salsa20::{
 };
 use zeroize::Zeroize;
 
-/// Size of an XSalsa20Poly1305 key in bytes
-pub const KEY_SIZE: usize = 32;
-
-/// Size of an XSalsa20Poly1305 nonce in bytes
-pub const NONCE_SIZE: usize = 24;
-
-/// Size of a Poly1305 tag in bytes
-pub const TAG_SIZE: usize = 16;
-
 /// Poly1305 tags
 pub type Tag = GenericArray<u8, U16>;
 
@@ -150,6 +141,17 @@ pub struct SecretBox<C> {
 
     /// Cipher.
     cipher: PhantomData<C>,
+}
+
+impl<C> SecretBox<C> {
+    /// Size of an XSalsa20Poly1305 key in bytes
+    pub const KEY_SIZE: usize = 32;
+
+    /// Size of an XSalsa20Poly1305 nonce in bytes
+    pub const NONCE_SIZE: usize = 24;
+
+    /// Size of a Poly1305 tag in bytes
+    pub const TAG_SIZE: usize = 16;
 }
 
 impl<C> SecretBox<C>
@@ -216,14 +218,15 @@ where
         buffer.extend_from_slice(Tag::default().as_slice())?;
 
         // TODO(tarcieri): add offset param to `encrypt_in_place_detached`
-        buffer.as_mut().copy_within(..pt_len, TAG_SIZE);
+        buffer.as_mut().copy_within(..pt_len, Self::TAG_SIZE);
 
         let tag = self.encrypt_in_place_detached(
             nonce,
             associated_data,
-            &mut buffer.as_mut()[TAG_SIZE..],
+            &mut buffer.as_mut()[Self::TAG_SIZE..],
         )?;
-        buffer.as_mut()[..TAG_SIZE].copy_from_slice(tag.as_slice());
+
+        buffer.as_mut()[..Self::TAG_SIZE].copy_from_slice(tag.as_slice());
         Ok(())
     }
 
@@ -249,22 +252,23 @@ where
         associated_data: &[u8],
         buffer: &mut dyn Buffer,
     ) -> Result<(), Error> {
-        if buffer.len() < TAG_SIZE {
+        if buffer.len() < Self::TAG_SIZE {
             return Err(Error);
         }
 
-        let tag = Tag::clone_from_slice(&buffer.as_ref()[..TAG_SIZE]);
+        let tag = Tag::clone_from_slice(&buffer.as_ref()[..Self::TAG_SIZE]);
+
         self.decrypt_in_place_detached(
             nonce,
             associated_data,
-            &mut buffer.as_mut()[TAG_SIZE..],
+            &mut buffer.as_mut()[Self::TAG_SIZE..],
             &tag,
         )?;
 
-        let pt_len = buffer.len() - TAG_SIZE;
+        let pt_len = buffer.len() - Self::TAG_SIZE;
 
         // TODO(tarcieri): add offset param to `encrypt_in_place_detached`
-        buffer.as_mut().copy_within(TAG_SIZE.., 0);
+        buffer.as_mut().copy_within(Self::TAG_SIZE.., 0);
         buffer.truncate(pt_len);
         Ok(())
     }
