@@ -115,7 +115,7 @@ pub use aead::{self, consts, AeadCore, AeadInPlace, Error, KeyInit, KeySizeUser}
 pub use salsa20::{Key, XNonce as Nonce};
 
 use aead::{
-    consts::{U0, U16, U24, U32},
+    consts::{U0, U16, U20, U24, U32},
     generic_array::GenericArray,
     Buffer,
 };
@@ -302,5 +302,17 @@ where
 impl<C> Drop for SecretBox<C> {
     fn drop(&mut self) {
         self.key.as_mut_slice().zeroize();
+    }
+}
+
+/// Key derivation function: trait for abstracting over HSalsa20 and HChaCha20.
+pub trait Kdf {
+    /// Derive a new key from the provided input key and nonce.
+    fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key;
+}
+
+impl Kdf for XSalsa20Poly1305 {
+    fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key {
+        salsa20::hsalsa::<U20>(key, nonce)
     }
 }
