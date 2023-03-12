@@ -7,14 +7,14 @@
 [![Project Chat][chat-image]][chat-link]
 [![Build Status][build-image]][build-link]
 
-**XSalsa20Poly1305** (a.k.a. NaCl [`crypto_secretbox`][1]) is an
-[authenticated encryption][2] cipher amenable to fast, constant-time
-implementations in software, based on the [Salsa20][3] stream cipher
-(with [XSalsa20][4] 192-bit nonce extension) and the [Poly1305][5] universal
-hash function, which acts as a message authentication code.
+[`crypto_secretbox`][1] is an [authenticated symmetric encryption][2] cipher
+amenable to fast, constant-time implementations in software, combining either the
+[Salsa20][3] stream cipher (with [XSalsa20][4] 192-bit nonce extension) or
+[ChaCha20][5] stream cipher with the [Poly1305][6] universal hash function,
+which acts as a message authentication code.
 
-This algorithm has largely been replaced by the newer [ChaCha20Poly1305][6]
-(and the associated [XChaCha20Poly1305][7]) AEAD ciphers ([RFC 8439][8]),
+This algorithm has largely been replaced by the newer [ChaCha20Poly1305][7]
+(and the associated [XChaCha20Poly1305][8]) AEAD ciphers ([RFC 8439][9]),
 but is useful for interoperability with legacy NaCl-based protocols.
 
 [Documentation][docs-link]
@@ -61,7 +61,8 @@ dual licensed as above, without any additional terms or conditions.
 [2]: https://en.wikipedia.org/wiki/Authenticated_encryption
 [3]: https://github.com/RustCrypto/stream-ciphers/tree/master/salsa20
 [4]: https://cr.yp.to/snuffle/xsalsa-20081128.pdf
-[5]: https://github.com/RustCrypto/universal-hashes/tree/master/poly1305
-[6]: https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305
-[7]: https://docs.rs/chacha20poly1305/latest/chacha20poly1305/struct.XChaCha20Poly1305.html
-[8]: https://tools.ietf.org/html/rfc8439
+[5]: https://cr.yp.to/chacha.html
+[6]: https://github.com/RustCrypto/universal-hashes/tree/master/poly1305
+[7]: https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305
+[8]: https://docs.rs/chacha20poly1305/latest/chacha20poly1305/struct.XChaCha20Poly1305.html
+[9]: https://tools.ietf.org/html/rfc8439

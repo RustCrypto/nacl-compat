@@ -123,8 +123,14 @@ use core::marker::PhantomData;
 use poly1305::Poly1305;
 use zeroize::Zeroize;
 
+#[cfg(feature = "chacha20")]
+use chacha20::{hchacha, XChaCha20};
+
 #[cfg(feature = "salsa20")]
-use salsa20::{cipher::consts::U20, XSalsa20};
+use salsa20::{hsalsa, XSalsa20};
+
+#[cfg(any(feature = "chacha20", feature = "salsa20"))]
+use cipher::consts::U20;
 
 /// Key type.
 pub type Key = GenericArray<u8, U32>;
@@ -134,6 +140,25 @@ pub type Nonce = GenericArray<u8, U24>;
 
 /// Poly1305 tag.
 pub type Tag = GenericArray<u8, U16>;
+
+/// `crypto_secretbox` instantiated with the XChaCha20 stream cipher.
+///
+/// NOTE: this is a legacy construction which is missing modern features like
+/// additional associated data.
+///
+/// We do not recommend using it in greenfield applications, and instead only
+/// using it for interop with legacy applications which require use of the
+/// `crypto_secretbox` construction instantiated with XChaCha20.
+///
+/// For new applications, we recommend using the `AEAD_XChaCha20_Poly1305`
+/// construction as described in [`draft-irtf-cfrg-xchacha`]. An implementation
+/// of this IETF flavor of XChaCha20Poly1305 can be found in
+/// [`chacha20poly1305::XChaCha20Poly1305`].
+///
+/// [`draft-irtf-cfrg-xchacha`]: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-xchacha
+/// [`chacha20poly1305::XChaCha20Poly1305`]: https://docs.rs/chacha20poly1305/latest/chacha20poly1305/type.XChaCha20Poly1305.html
+#[cfg(feature = "chacha20")]
+pub type XChaCha20Poly1305 = SecretBox<XChaCha20>;
 
 /// `crypto_secretbox` instantiated with the XSalsa20 stream cipher.
 #[cfg(feature = "salsa20")]
@@ -317,9 +342,16 @@ pub trait Kdf {
     fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key;
 }
 
+#[cfg(feature = "chacha20")]
+impl Kdf for XChaCha20Poly1305 {
+    fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key {
+        hchacha::<U20>(key, nonce)
+    }
+}
+
 #[cfg(feature = "salsa20")]
 impl Kdf for XSalsa20Poly1305 {
     fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key {
-        salsa20::hsalsa::<U20>(key, nonce)
+        hsalsa::<U20>(key, nonce)
     }
 }
