@@ -244,6 +244,7 @@ name = "crypto_secretbox"
 version = "0.0.0"
 dependencies = [
  "aead",
+ "cipher",
  "poly1305",
  "salsa20",
  "subtle",

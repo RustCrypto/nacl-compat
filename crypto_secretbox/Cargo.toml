@@ -17,15 +17,19 @@ rust-version = "1.60"
 
 [dependencies]
 aead = { version = "0.5", default-features = false }
-salsa20 = { version = "0.10", features = ["zeroize"] }
+cipher = { version = "0.4", default-features = false }
 poly1305 = "0.8"
 subtle = { version = "2", default-features = false }
 zeroize = { version = "1", default-features = false }
 
+# optional dependencies
+salsa20 = { version = "0.10", optional = true, features = ["zeroize"] }
+
 [features]
-default = ["alloc", "getrandom"]
-std = ["aead/std", "alloc"]
+default = ["alloc", "getrandom", "salsa20"]
 alloc = ["aead/alloc"]
+std = ["aead/std", "alloc"]
+
 getrandom  = ["aead/getrandom", "rand_core"]
 heapless = ["aead/heapless"]
 rand_core = ["aead/rand_core"]

@@ -2,6 +2,8 @@
 //!
 //! Adapted from NaCl's `tests/secretbox.c` and `tests/secretbox.out`
 
+#![cfg(feature = "salsa20")]
+
 use crypto_secretbox::{
     aead::{generic_array::GenericArray, Aead, KeyInit},
     XSalsa20Poly1305,
