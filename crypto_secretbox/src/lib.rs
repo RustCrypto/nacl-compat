@@ -112,25 +112,31 @@
 //! [6]: https://tools.ietf.org/html/rfc8439
 
 pub use aead::{self, consts, AeadCore, AeadInPlace, Error, KeyInit, KeySizeUser};
-pub use salsa20::{Key, XNonce as Nonce};
 
 use aead::{
-    consts::{U0, U16, U20, U24, U32},
+    consts::{U0, U16, U24, U32},
     generic_array::GenericArray,
     Buffer,
 };
+use cipher::{IvSizeUser, KeyIvInit, StreamCipher};
 use core::marker::PhantomData;
 use poly1305::Poly1305;
-use salsa20::{
-    cipher::{IvSizeUser, KeyIvInit, StreamCipher},
-    XSalsa20,
-};
 use zeroize::Zeroize;
 
-/// Poly1305 tags
+#[cfg(feature = "salsa20")]
+use salsa20::{cipher::consts::U20, XSalsa20};
+
+/// Key type.
+pub type Key = GenericArray<u8, U32>;
+
+/// Nonce type.
+pub type Nonce = GenericArray<u8, U24>;
+
+/// Poly1305 tag.
 pub type Tag = GenericArray<u8, U16>;
 
 /// `crypto_secretbox` instantiated with the XSalsa20 stream cipher.
+#[cfg(feature = "salsa20")]
 pub type XSalsa20Poly1305 = SecretBox<XSalsa20>;
 
 /// The NaCl `crypto_secretbox` authenticated symmetric encryption primitive,
@@ -311,6 +317,7 @@ pub trait Kdf {
     fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key;
 }
 
+#[cfg(feature = "salsa20")]
 impl Kdf for XSalsa20Poly1305 {
     fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key {
         salsa20::hsalsa::<U20>(key, nonce)
