@@ -23,6 +23,7 @@ subtle = { version = "2", default-features = false }
 zeroize = { version = "1", default-features = false }
 
 # optional dependencies
+chacha20 = { version = "0.9", optional = true, features = ["zeroize"] }
 salsa20 = { version = "0.10", optional = true, features = ["zeroize"] }
 
 [features]
