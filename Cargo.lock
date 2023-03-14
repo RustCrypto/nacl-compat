@@ -246,6 +246,7 @@ dependencies = [
  "aead",
  "chacha20",
  "cipher",
+ "generic-array",
  "poly1305",
  "salsa20",
  "subtle",
@@ -323,6 +324,7 @@ checksum = "bff49e947297f3312447abdca79f45f4738097cc82b06e72054d2223f601f1b9"
 dependencies = [
  "typenum",
  "version_check",
+ "zeroize",
 ]
 
 [[package]]

@@ -114,23 +114,20 @@
 pub use aead::{self, consts, AeadCore, AeadInPlace, Error, KeyInit, KeySizeUser};
 
 use aead::{
-    consts::{U0, U16, U24, U32},
+    consts::{U0, U16, U24, U32, U8},
     generic_array::GenericArray,
     Buffer,
 };
 use cipher::{IvSizeUser, KeyIvInit, StreamCipher};
 use core::marker::PhantomData;
 use poly1305::Poly1305;
-use zeroize::Zeroize;
+use zeroize::{Zeroize, Zeroizing};
 
 #[cfg(feature = "chacha20")]
-use chacha20::{hchacha, XChaCha20};
+use chacha20::{cipher::consts::U20, hchacha, ChaCha20Legacy as ChaCha20};
 
 #[cfg(feature = "salsa20")]
-use salsa20::{hsalsa, XSalsa20};
-
-#[cfg(any(feature = "chacha20", feature = "salsa20"))]
-use cipher::consts::U20;
+use salsa20::{cipher::consts::U10, hsalsa, Salsa20};
 
 /// Key type.
 pub type Key = GenericArray<u8, U32>;
@@ -158,11 +155,11 @@ pub type Tag = GenericArray<u8, U16>;
 /// [`draft-irtf-cfrg-xchacha`]: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-xchacha
 /// [`chacha20poly1305::XChaCha20Poly1305`]: https://docs.rs/chacha20poly1305/latest/chacha20poly1305/type.XChaCha20Poly1305.html
 #[cfg(feature = "chacha20")]
-pub type XChaCha20Poly1305 = SecretBox<XChaCha20>;
+pub type XChaCha20Poly1305 = SecretBox<ChaCha20>;
 
 /// `crypto_secretbox` instantiated with the XSalsa20 stream cipher.
 #[cfg(feature = "salsa20")]
-pub type XSalsa20Poly1305 = SecretBox<XSalsa20>;
+pub type XSalsa20Poly1305 = SecretBox<Salsa20>;
 
 /// The NaCl `crypto_secretbox` authenticated symmetric encryption primitive,
 /// generic
@@ -187,19 +184,19 @@ impl<C> SecretBox<C> {
 
 impl<C> SecretBox<C>
 where
-    C: KeyIvInit + KeySizeUser<KeySize = U32> + IvSizeUser<IvSize = U24> + StreamCipher,
+    C: Kdf + KeyIvInit + KeySizeUser<KeySize = U32> + IvSizeUser<IvSize = U8> + StreamCipher,
 {
     /// Initialize cipher instance and Poly1305 MAC.
     fn init_cipher_and_mac(&self, nonce: &Nonce) -> (C, Poly1305) {
-        let mut cipher = C::new(&self.key, nonce);
+        let (nonce_prefix, nonce_suffix) = nonce.split_at(16);
+        let subkey = Zeroizing::new(C::kdf(&self.key, nonce_prefix.as_ref().into()));
+        let mut cipher = C::new(&subkey, nonce_suffix.as_ref().into());
 
         // Derive Poly1305 key from the first 32-bytes of the keystream.
-        let mut mac_key = poly1305::Key::default();
+        let mut mac_key = Zeroizing::new(poly1305::Key::default());
         cipher.apply_keystream(&mut mac_key);
 
         let mac = Poly1305::new(&mac_key);
-        mac_key.zeroize();
-
         (cipher, mac)
     }
 }
@@ -235,7 +232,7 @@ impl<C> AeadCore for SecretBox<C> {
 
 impl<C> AeadInPlace for SecretBox<C>
 where
-    C: KeyIvInit + KeySizeUser<KeySize = U32> + IvSizeUser<IvSize = U24> + StreamCipher,
+    C: Kdf + KeyIvInit + KeySizeUser<KeySize = U32> + IvSizeUser<IvSize = U8> + StreamCipher,
 {
     fn encrypt_in_place(
         &self,
@@ -343,15 +340,15 @@ pub trait Kdf {
 }
 
 #[cfg(feature = "chacha20")]
-impl Kdf for XChaCha20Poly1305 {
+impl Kdf for ChaCha20 {
     fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key {
         hchacha::<U20>(key, nonce)
     }
 }
 
 #[cfg(feature = "salsa20")]
-impl Kdf for XSalsa20Poly1305 {
+impl Kdf for Salsa20 {
     fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key {
-        hsalsa::<U20>(key, nonce)
+        hsalsa::<U10>(key, nonce)
     }
 }
