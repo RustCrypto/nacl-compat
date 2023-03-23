@@ -256,6 +256,28 @@ impl Drop for SecretKey {
     }
 }
 
+#[cfg(feature = "serde")]
+impl Serialize for SecretKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        serdect::array::serialize_hex_upper_or_bin(self.0.as_bytes(), serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for SecretKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        let mut bytes = [0u8; KEY_SIZE];
+        serdect::array::deserialize_hex_or_bin(&mut bytes, deserializer)?;
+        Ok(SecretKey::from(bytes))
+    }
+}
+
 /// A `crypto_box` public key.
 ///
 /// This type can be serialized if the `serde` feature is enabled.
@@ -541,6 +563,30 @@ mod tests {
         let serialized = rmp_serde::to_vec_named(&public_key).unwrap();
         let deserialized: PublicKey = rmp_serde::from_slice(&serialized).unwrap();
         assert_eq!(deserialized, public_key,);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_secret_key_serialization() {
+        use aead::rand_core::RngCore;
+
+        // Random SK bytes
+        let mut secret_key_bytes = [0; 32];
+        let mut rng = rand::thread_rng();
+        rng.fill_bytes(&mut secret_key_bytes);
+
+        // Create secret key
+        let secret_key = SecretKey::from(secret_key_bytes);
+
+        // Round-trip serialize with bincode
+        let serialized = bincode::serialize(&secret_key).unwrap();
+        let deserialized: SecretKey = bincode::deserialize(&serialized).unwrap();
+        assert_eq!(deserialized.to_bytes(), secret_key.to_bytes());
+
+        // Round-trip serialize with rmp (msgpack)
+        let serialized = rmp_serde::to_vec_named(&secret_key).unwrap();
+        let deserialized: SecretKey = rmp_serde::from_slice(&serialized).unwrap();
+        assert_eq!(deserialized.to_bytes(), secret_key.to_bytes());
     }
 
     #[test]
