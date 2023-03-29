@@ -236,6 +236,21 @@ impl SecretKey {
     pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
         self.0.to_bytes()
     }
+
+    /// Converts an `Ed25519` signing key into a [`SecretKey`].
+    ///
+    /// Matches the conversion as done in https://libsodium.gitbook.io/doc/advanced/ed25519-curve25519.
+    #[cfg(feature = "ed25519")]
+    pub fn from_signing_key(signing_key: ed25519_dalek::SigningKey) -> Self {
+        use sha2::Digest;
+
+        let secret = signing_key.to_bytes();
+        let hash = sha2::Sha512::default().chain_update(&secret).finalize();
+        let (lower, _upper) = hash.split_at(32);
+        let scalar = Scalar::from_bits_clamped(lower.try_into().unwrap());
+
+        SecretKey(scalar)
+    }
 }
 
 impl From<[u8; KEY_SIZE]> for SecretKey {
@@ -304,6 +319,20 @@ impl PublicKey {
     /// Serialize this public key as bytes.
     pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
         self.0.to_bytes()
+    }
+
+    /// Converts an `Ed25519` verifying key into a [`PublicKey`].
+    ///
+    /// Matches the conversion as done in https://libsodium.gitbook.io/doc/advanced/ed25519-curve25519.
+    #[cfg(feature = "ed25519")]
+    pub fn from_verifying_key(verifying_key: ed25519_dalek::VerifyingKey) -> Self {
+        // to_bytes returns the EdwardsY in compressed form
+        let ed_compressed = curve25519_dalek::edwards::CompressedEdwardsY(verifying_key.to_bytes());
+        // decompress
+        let ed = ed_compressed.decompress().expect("must be valid point");
+        // turn into montgomery form
+        let montgomery = ed.to_montgomery();
+        PublicKey(montgomery)
     }
 }
 
@@ -608,5 +637,42 @@ mod tests {
         for i in 33..=40 {
             assert!(PublicKey::from_slice(&array[..i]).is_none());
         }
+    }
+
+    #[cfg(feature = "ed25519")]
+    #[test]
+    fn test_ed25519_conversions() {
+        use aead::{Aead, AeadCore};
+
+        let alice_ed_secret = ed25519_dalek::SigningKey::generate(&mut rand::rngs::OsRng);
+        let alice_ed_pub = alice_ed_secret.verifying_key();
+        let bob_ed_secret = ed25519_dalek::SigningKey::generate(&mut rand::rngs::OsRng);
+        let bob_ed_pub = bob_ed_secret.verifying_key();
+
+        let (alice_crypto_secret, alice_crypto_public) = (
+            SecretKey::from_signing_key(alice_ed_secret),
+            PublicKey::from_verifying_key(alice_ed_pub),
+        );
+
+        let (bob_crypto_secret, bob_crypto_public) = (
+            SecretKey::from_signing_key(bob_ed_secret),
+            PublicKey::from_verifying_key(bob_ed_pub),
+        );
+
+        let plaintext = b"hello world";
+        let nonce = ChaChaBox::generate_nonce(&mut rand::rngs::OsRng);
+
+        // Alice
+        let sealed = {
+            let boxx = ChaChaBox::new(&bob_crypto_public, &alice_crypto_secret);
+            boxx.encrypt(&nonce, &plaintext[..]).unwrap()
+        };
+        // Bob
+        let decrypted = {
+            let boxx = ChaChaBox::new(&alice_crypto_public, &bob_crypto_secret);
+            boxx.decrypt(&nonce, &sealed[..]).unwrap()
+        };
+
+        assert_eq!(plaintext, &decrypted[..]);
     }
 }
