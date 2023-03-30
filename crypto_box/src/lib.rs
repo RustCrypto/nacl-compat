@@ -236,20 +236,11 @@ impl SecretKey {
     pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
         self.0.to_bytes()
     }
+}
 
-    /// Converts an `Ed25519` signing key into a [`SecretKey`].
-    ///
-    /// Matches the conversion as done in https://libsodium.gitbook.io/doc/advanced/ed25519-curve25519.
-    #[cfg(feature = "ed25519")]
-    pub fn from_signing_key(signing_key: ed25519_dalek::SigningKey) -> Self {
-        use sha2::Digest;
-
-        let secret = signing_key.to_bytes();
-        let hash = sha2::Sha512::default().chain_update(&secret).finalize();
-        let (lower, _upper) = hash.split_at(32);
-        let scalar = Scalar::from_bits_clamped(lower.try_into().unwrap());
-
-        SecretKey(scalar)
+impl From<Scalar> for SecretKey {
+    fn from(value: Scalar) -> Self {
+        SecretKey(value)
     }
 }
 
@@ -363,6 +354,12 @@ impl PartialOrd for PublicKey {
 impl Ord for PublicKey {
     fn cmp(&self, other: &Self) -> Ordering {
         self.as_bytes().cmp(other.as_bytes())
+    }
+}
+
+impl From<MontgomeryPoint> for PublicKey {
+    fn from(value: MontgomeryPoint) -> Self {
+        PublicKey(value)
     }
 }
 
@@ -639,7 +636,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "ed25519")]
     #[test]
     fn test_ed25519_conversions() {
         use aead::{Aead, AeadCore};
@@ -650,13 +646,13 @@ mod tests {
         let bob_ed_pub = bob_ed_secret.verifying_key();
 
         let (alice_crypto_secret, alice_crypto_public) = (
-            SecretKey::from_signing_key(alice_ed_secret),
-            PublicKey::from_verifying_key(alice_ed_pub),
+            SecretKey::from(alice_ed_secret.to_scalar()),
+            PublicKey::from(alice_ed_pub.to_montgomery()),
         );
 
         let (bob_crypto_secret, bob_crypto_public) = (
-            SecretKey::from_signing_key(bob_ed_secret),
-            PublicKey::from_verifying_key(bob_ed_pub),
+            SecretKey::from(bob_ed_secret.to_scalar()),
+            PublicKey::from(bob_ed_pub.to_montgomery()),
         );
 
         let plaintext = b"hello world";

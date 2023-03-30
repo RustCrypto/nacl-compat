@@ -6,3 +6,6 @@ members = [
     "crypto_secretbox",
     "crypto_secretstream",
 ]
+
+[patch.crates-io]
+ed25519-dalek = { git = "https://github.com/dalek-cryptography/ed25519-dalek", branch = "scalar-and-montgomery-point-conversions"}

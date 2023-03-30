@@ -29,8 +29,6 @@ zeroize = { version = "1", default-features = false }
 # optional dependencies
 blake2 = { version = "0.10", optional = true, default-features = false }
 serdect = { version = "0.2", optional = true, default-features = false }
-ed25519-dalek = { version = "2.0.0-rc.2", default-features = false, features = ["zeroize"], optional = true }
-sha2 = { version = "0.10.6", optional = true }
 
 [dev-dependencies]
 bincode = "1"
@@ -39,7 +37,7 @@ rmp-serde = "1"
 ed25519-dalek = { version = "2.0.0-rc.2", default-features = false, features = ["zeroize", "rand_core"] }
 
 [features]
-default = ["alloc", "getrandom", "ed25519"]
+default = ["alloc", "getrandom"]
 std = ["aead/std"]
 serde = ["serdect"]
 alloc = ["aead/alloc"]
@@ -47,7 +45,6 @@ getrandom = ["aead/getrandom", "rand_core"]
 heapless = ["aead/heapless"]
 rand_core = ["aead/rand_core"]
 seal = ["alloc", "blake2"]
-ed25519 = ["ed25519-dalek", "sha2"]
 
 [package.metadata.docs.rs]
 features = ["serde", "seal"]
