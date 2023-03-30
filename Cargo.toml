@@ -8,4 +8,4 @@ members = [
 ]
 
 [patch.crates-io]
-ed25519-dalek = { git = "https://github.com/dalek-cryptography/ed25519-dalek", branch = "scalar-and-montgomery-point-conversions"}
+ed25519-dalek = { git = "https://github.com/dalek-cryptography/ed25519-dalek" }
