@@ -311,20 +311,6 @@ impl PublicKey {
     pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
         self.0.to_bytes()
     }
-
-    /// Converts an `Ed25519` verifying key into a [`PublicKey`].
-    ///
-    /// Matches the conversion as done in https://libsodium.gitbook.io/doc/advanced/ed25519-curve25519.
-    #[cfg(feature = "ed25519")]
-    pub fn from_verifying_key(verifying_key: ed25519_dalek::VerifyingKey) -> Self {
-        // to_bytes returns the EdwardsY in compressed form
-        let ed_compressed = curve25519_dalek::edwards::CompressedEdwardsY(verifying_key.to_bytes());
-        // decompress
-        let ed = ed_compressed.decompress().expect("must be valid point");
-        // turn into montgomery form
-        let montgomery = ed.to_montgomery();
-        PublicKey(montgomery)
-    }
 }
 
 impl AsRef<[u8]> for PublicKey {
@@ -634,41 +620,5 @@ mod tests {
         for i in 33..=40 {
             assert!(PublicKey::from_slice(&array[..i]).is_none());
         }
-    }
-
-    #[test]
-    fn test_ed25519_conversions() {
-        use aead::{Aead, AeadCore};
-
-        let alice_ed_secret = ed25519_dalek::SigningKey::generate(&mut rand::rngs::OsRng);
-        let alice_ed_pub = alice_ed_secret.verifying_key();
-        let bob_ed_secret = ed25519_dalek::SigningKey::generate(&mut rand::rngs::OsRng);
-        let bob_ed_pub = bob_ed_secret.verifying_key();
-
-        let (alice_crypto_secret, alice_crypto_public) = (
-            SecretKey::from(alice_ed_secret.to_scalar()),
-            PublicKey::from(alice_ed_pub.to_montgomery()),
-        );
-
-        let (bob_crypto_secret, bob_crypto_public) = (
-            SecretKey::from(bob_ed_secret.to_scalar()),
-            PublicKey::from(bob_ed_pub.to_montgomery()),
-        );
-
-        let plaintext = b"hello world";
-        let nonce = ChaChaBox::generate_nonce(&mut rand::rngs::OsRng);
-
-        // Alice
-        let sealed = {
-            let boxx = ChaChaBox::new(&bob_crypto_public, &alice_crypto_secret);
-            boxx.encrypt(&nonce, &plaintext[..]).unwrap()
-        };
-        // Bob
-        let decrypted = {
-            let boxx = ChaChaBox::new(&alice_crypto_public, &bob_crypto_secret);
-            boxx.decrypt(&nonce, &sealed[..]).unwrap()
-        };
-
-        assert_eq!(plaintext, &decrypted[..]);
     }
 }

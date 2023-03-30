@@ -34,7 +34,6 @@ serdect = { version = "0.2", optional = true, default-features = false }
 bincode = "1"
 rand = "0.8"
 rmp-serde = "1"
-ed25519-dalek = { version = "2.0.0-rc.2", default-features = false, features = ["zeroize", "rand_core"] }
 
 [features]
 default = ["alloc", "getrandom"]
