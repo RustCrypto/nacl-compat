@@ -238,6 +238,12 @@ impl SecretKey {
     }
 }
 
+impl From<Scalar> for SecretKey {
+    fn from(value: Scalar) -> Self {
+        SecretKey(value)
+    }
+}
+
 impl From<[u8; KEY_SIZE]> for SecretKey {
     fn from(bytes: [u8; KEY_SIZE]) -> SecretKey {
         SecretKey(Scalar::from_bits_clamped(bytes))
@@ -334,6 +340,12 @@ impl PartialOrd for PublicKey {
 impl Ord for PublicKey {
     fn cmp(&self, other: &Self) -> Ordering {
         self.as_bytes().cmp(other.as_bytes())
+    }
+}
+
+impl From<MontgomeryPoint> for PublicKey {
+    fn from(value: MontgomeryPoint) -> Self {
+        PublicKey(value)
     }
 }
 
