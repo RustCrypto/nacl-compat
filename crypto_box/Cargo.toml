@@ -32,18 +32,22 @@ serdect = { version = "0.2", optional = true, default-features = false }
 
 [dev-dependencies]
 bincode = "1"
+hex-literal = "0.4"
 rand = "0.8"
 rmp-serde = "1"
 
 [features]
-default = ["alloc", "getrandom"]
-std = ["aead/std"]
-serde = ["serdect"]
+default = ["alloc", "getrandom", "salsa20"]
 alloc = ["aead/alloc"]
+std = ["aead/std"]
+
+chacha20 = ["crypto_secretbox/chacha20"]
 getrandom = ["aead/getrandom", "rand_core"]
 heapless = ["aead/heapless"]
 rand_core = ["aead/rand_core"]
-seal = ["alloc", "blake2"]
+salsa20 = ["crypto_secretbox/salsa20"]
+seal = ["dep:blake2", "alloc"]
+serde = ["dep:serdect"]
 
 [package.metadata.docs.rs]
 features = ["serde", "seal"]

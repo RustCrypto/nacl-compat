@@ -124,10 +124,13 @@ use poly1305::Poly1305;
 use zeroize::{Zeroize, Zeroizing};
 
 #[cfg(feature = "chacha20")]
-use chacha20::{cipher::consts::U20, hchacha, ChaCha20Legacy as ChaCha20};
+use chacha20::{hchacha, ChaCha20Legacy as ChaCha20};
 
 #[cfg(feature = "salsa20")]
-use salsa20::{cipher::consts::U10, hsalsa, Salsa20};
+use salsa20::{hsalsa, Salsa20};
+
+#[cfg(any(feature = "chacha20", feature = "salsa20"))]
+use cipher::consts::U10;
 
 /// Key type.
 pub type Key = GenericArray<u8, U32>;
@@ -339,10 +342,19 @@ pub trait Kdf {
     fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key;
 }
 
+impl<C> Kdf for SecretBox<C>
+where
+    C: Kdf,
+{
+    fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key {
+        C::kdf(key, nonce)
+    }
+}
+
 #[cfg(feature = "chacha20")]
 impl Kdf for ChaCha20 {
     fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key {
-        hchacha::<U20>(key, nonce)
+        hchacha::<U10>(key, nonce)
     }
 }
 
