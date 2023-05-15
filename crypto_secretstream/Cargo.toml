@@ -28,7 +28,6 @@ getrandom = { version = "0.2", default-features = false, features = ["js"] }
 
 [dev-dependencies]
 rand_core = { version = "0.6", features = ["std"] }
-sodiumoxide = "0.2"
 
 [features]
 default = ["std"]

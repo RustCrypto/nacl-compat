@@ -1,0 +1,10 @@
+[package]
+name = "test-vector-gen"
+description = "Test vector generator which uses libsodium bindings"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+hex = "0.4.3"
+libsodium-sys-stable = "1"

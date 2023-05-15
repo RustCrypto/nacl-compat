@@ -1,3 +1,7 @@
+// TODO(tarcieri): convert this into a test vector generator
+// Below are the original `sodiumoxide`-based tests from the `crypto_secretstream` crate.
+// These need to be converted into a set of fixed test vectors.
+
 #[cfg(feature = "alloc")]
 use crypto_secretstream::*;
 use sodiumoxide::crypto::secretstream as reference;

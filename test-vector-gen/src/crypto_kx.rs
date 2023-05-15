@@ -1,4 +1,6 @@
-//! sodiumoxide interop tests.
+// TODO(tarcieri): convert this into a test vector generator
+// Below are the original `sodiumoxide`-based tests from the `crypto_kx` crate.
+// These need to be converted into a set of fixed test vectors.
 
 use crypto_kx::*;
 use rand_core::OsRng;
