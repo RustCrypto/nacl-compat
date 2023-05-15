@@ -27,6 +27,9 @@ zeroize = { version = "1", default-features = false }
 chacha20 = { version = "0.9", optional = true, features = ["zeroize"] }
 salsa20 = { version = "0.10", optional = true, features = ["zeroize"] }
 
+[dev-dependencies]
+hex-literal = "0.4"
+
 [features]
 default = ["alloc", "getrandom", "salsa20"]
 alloc = ["aead/alloc"]

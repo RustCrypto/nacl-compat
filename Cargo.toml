@@ -5,4 +5,5 @@ members = [
     "crypto_kx",
     "crypto_secretbox",
     "crypto_secretstream",
+    "test-vector-gen"
 ]
