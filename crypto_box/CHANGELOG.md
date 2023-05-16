@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.9.0-rc.0 (2023-05-16)
+
+COMPATIBILITY NOTE: previous versions of this crate provided a `ChaChaBox`
+construction which is incompatible with the one in libsodium. This release
+makes breaking changes to that construction which provide compatibility with
+the libsodium implementation. No backwards compatibility is provided for the
+construction in previous releases of this crate. We apologize for the
+inconvenience.
+
+### Added
+- `SEALBYTES` constant ([#81])
+- `serde` impl for `SecretKey` ([#101])
+- Generic implementation of `CryptoBox` ([#113])
+
+### Changed
+- Use `crypto_secretbox` crate for symmetric cryptography ([#82], [#109])
+- Replaced `x25519-dalek` with `curve25519-dalek` v4.0.0-rc; MSRV 1.60 ([#88])
+- Use `MontgomeryPoint` as `PublicKey`'s inner type ([#91])
+- Make `seal` and `unseal` inherent methods ([#118])
+  - `seal` => `PublicKey::seal`
+  - `seal_open` => `SecretKey::unseal`
+
+### Removed
+- `rand_core` reexport ([#116])
+
+[#81]: https://github.com/RustCrypto/nacl-compat/pull/81
+[#82]: https://github.com/RustCrypto/nacl-compat/pull/82
+[#88]: https://github.com/RustCrypto/nacl-compat/pull/88
+[#91]: https://github.com/RustCrypto/nacl-compat/pull/91
+[#101]: https://github.com/RustCrypto/nacl-compat/pull/101
+[#109]: https://github.com/RustCrypto/nacl-compat/pull/109
+[#113]: https://github.com/RustCrypto/nacl-compat/pull/113
+[#116]: https://github.com/RustCrypto/nacl-compat/pull/116
+[#118]: https://github.com/RustCrypto/nacl-compat/pull/118
+
 ## 0.8.2 (2022-10-29)
 ### Added
 - `seal` and `seal_open` functions ([#66])
