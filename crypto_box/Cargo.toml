@@ -49,5 +49,5 @@ seal = ["dep:blake2", "alloc"]
 serde = ["dep:serdect"]
 
 [package.metadata.docs.rs]
-features = ["serde", "seal"]
+all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
