@@ -1,9 +1,10 @@
 [package]
 name = "crypto_secretbox"
-version = "0.0.0"
+version = "0.1.0"
 description = """
 Pure Rust implementation of the XSalsa20Poly1305 (a.k.a. NaCl crypto_secretbox)
-authenticated encryption algorithm
+authenticated encryption cipher as well as the libsodium variant of
+XChaCha20Poly1305
 """
 authors = ["RustCrypto Developers"]
 edition = "2021"
@@ -11,7 +12,7 @@ license = "Apache-2.0 OR MIT"
 readme = "README.md"
 documentation = "https://docs.rs/crypto_secretbox"
 repository = "https://github.com/RustCrypto/nacl-compat/tree/master/crypto_secretbox"
-keywords = ["aead", "salsa20", "poly1305", "xsalsa20"]
+keywords = ["aead", "nacl", "poly1305", "salsa20", "xsalsa20"]
 categories = ["cryptography", "no-std"]
 rust-version = "1.60"
 

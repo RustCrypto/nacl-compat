@@ -1,4 +1,4 @@
-# RustCrypto: crypto_secretbox
+# RustCrypto: `crypto_secretbox`
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -13,9 +13,10 @@ amenable to fast, constant-time implementations in software, combining either th
 [ChaCha20][5] stream cipher with the [Poly1305][6] universal hash function,
 which acts as a message authentication code.
 
-This algorithm has largely been replaced by the newer [ChaCha20Poly1305][7]
-(and the associated [XChaCha20Poly1305][8]) AEAD ciphers ([RFC 8439][9]),
-but is useful for interoperability with legacy NaCl-based protocols.
+This algorithm has largely been replaced by the newer IETF variant of
+[ChaCha20Poly1305][7] (and the associated [XChaCha20Poly1305][8]) AEAD
+ciphers ([RFC 8439][9]), but is useful for interoperability with legacy
+NaCl-based protocols.
 
 [Documentation][docs-link]
 
