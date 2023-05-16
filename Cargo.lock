@@ -933,6 +933,7 @@ name = "test-vector-gen"
 version = "0.0.0"
 dependencies = [
  "hex",
+ "hex-literal",
  "libsodium-sys-stable",
 ]
 

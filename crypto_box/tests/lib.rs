@@ -132,6 +132,20 @@ mod xsalsa20poly1305 {
     impl_tests!(SalsaBox, PLAINTEXT, CIPHERTEXT);
 }
 
+#[cfg(feature = "chacha20")]
+mod xchacha20poly1305 {
+    use super::*;
+    use crypto_box::ChaChaBox;
+    const CIPHERTEXT: &[u8] = &hex!(
+        "0cd5ed093de698c8e410d0d451df2f5283057376b947b9b7392b956e5d675f309218acce8cf85f6c"
+        "f6a9e2e09ef8c5b0f97c661ee21b1b3418be566692634056a92b4034d5d0cf14c52420a488b7f0da"
+        "0c5740dfc6b85397d3a8f679e84303e8d3f8b048abdb2dd79183b0a62683a1bc2a527fc9b82c5ffa"
+        "c4a684bcfeadfdcd28930b2dbe597f4716a658ccfca5b44049e06c"
+    );
+
+    impl_tests!(ChaChaBox, PLAINTEXT, CIPHERTEXT);
+}
+
 #[cfg(feature = "seal")]
 #[test]
 fn seal() {

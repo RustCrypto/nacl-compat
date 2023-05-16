@@ -20,7 +20,7 @@ const PLAINTEXT: &[u8] = &hex!(
 );
 
 macro_rules! impl_tests {
-    ($cipher:path) => {
+    ($cipher:path, $ciphertext:expr) => {
         #[test]
         fn encrypt() {
             let key = GenericArray::from_slice(KEY);
@@ -28,7 +28,7 @@ macro_rules! impl_tests {
             let cipher = <$cipher>::new(key);
             let ciphertext = cipher.encrypt(nonce, PLAINTEXT).unwrap();
 
-            assert_eq!(CIPHERTEXT, ciphertext.as_slice());
+            assert_eq!($ciphertext, ciphertext.as_slice());
         }
 
         #[test]
@@ -36,7 +36,7 @@ macro_rules! impl_tests {
             let key = GenericArray::from_slice(KEY);
             let nonce = GenericArray::from_slice(NONCE);
             let cipher = <$cipher>::new(key);
-            let plaintext = cipher.decrypt(nonce, CIPHERTEXT).unwrap();
+            let plaintext = cipher.decrypt(nonce, $ciphertext).unwrap();
 
             assert_eq!(PLAINTEXT, plaintext.as_slice());
         }
@@ -45,7 +45,7 @@ macro_rules! impl_tests {
         fn decrypt_modified() {
             let key = GenericArray::from_slice(KEY);
             let nonce = GenericArray::from_slice(NONCE);
-            let mut ciphertext = Vec::from(CIPHERTEXT);
+            let mut ciphertext = Vec::from($ciphertext);
 
             // Tweak the first byte
             ciphertext[0] ^= 0xaa;
@@ -72,7 +72,7 @@ mod xchacha20poly1305 {
         "ad3cf0d651938802ca867cd52bbe50c2da1161cb09514407609920"
     );
 
-    impl_tests!(XChaCha20Poly1305);
+    impl_tests!(XChaCha20Poly1305, CIPHERTEXT);
 }
 
 #[cfg(feature = "salsa20")]
@@ -91,5 +91,5 @@ mod xsalsa20poly1305 {
         "56244a9e88d5f9b37973f622a43d14a6599b1f654cb45a74e355a5"
     );
 
-    impl_tests!(XSalsa20Poly1305);
+    impl_tests!(XSalsa20Poly1305, CIPHERTEXT);
 }
