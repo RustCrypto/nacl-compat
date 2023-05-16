@@ -1,5 +1,6 @@
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![doc = include_str!("../README.md")]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg"
@@ -222,6 +223,9 @@ pub type SalsaBox = CryptoBox<Salsa20>;
 /// This type impls the [`aead::Aead`] trait, and otherwise functions as a
 /// symmetric Authenticated Encryption with Associated Data (AEAD) cipher
 /// once instantiated.
+///
+/// Note that additional associated data (AAD) is not supported and encryption
+/// operations will return [`aead::Error`] if it is provided as an argument.
 ///
 /// [X25519]: https://cr.yp.to/ecdh.html
 /// [crypto_secretbox]: https://github.com/RustCrypto/nacl-compat/tree/master/crypto_secretbox
