@@ -191,9 +191,6 @@ use chacha20::ChaCha20Legacy as ChaCha20;
 #[cfg(feature = "salsa20")]
 use salsa20::Salsa20;
 
-#[cfg(feature = "seal")]
-use {aead::rand_core::CryptoRngCore, alloc::vec::Vec};
-
 /// Size of a `crypto_box` public or secret key in bytes.
 pub const KEY_SIZE: usize = 32;
 
@@ -313,53 +310,6 @@ fn get_seal_nonce(ephemeral_pk: &PublicKey, recipient_pk: &PublicKey) -> Nonce {
     hasher.update(ephemeral_pk.as_bytes());
     hasher.update(recipient_pk.as_bytes());
     hasher.finalize()
-}
-
-/// Implementation of `crypto_box_seal` function from [libsodium "sealed boxes"].
-///
-/// Sealed boxes are designed to anonymously send messages to a recipient given their public key.
-///
-/// [libsodium "sealed boxes"]: https://doc.libsodium.org/public-key_cryptography/sealed_boxes
-#[cfg(feature = "seal")]
-pub fn seal(
-    csprng: &mut impl CryptoRngCore,
-    recipient_pk: &PublicKey,
-    plaintext: &[u8],
-) -> Result<Vec<u8>, aead::Error> {
-    let mut out = Vec::with_capacity(KEY_SIZE + TAG_SIZE + plaintext.len());
-
-    let ep_sk = SecretKey::generate(csprng);
-    let ep_pk = ep_sk.public_key();
-
-    out.extend_from_slice(ep_pk.as_bytes());
-
-    let nonce = get_seal_nonce(&ep_pk, recipient_pk);
-
-    let salsabox = SalsaBox::new(recipient_pk, &ep_sk);
-    let encrypted = aead::Aead::encrypt(&salsabox, &nonce, plaintext)?;
-
-    out.extend_from_slice(&encrypted);
-
-    Ok(out)
-}
-
-/// Implementation of `crypto_box_seal_open` function from [libsodium "sealed boxes"].
-///
-/// Sealed boxes are designed to anonymously send messages to a recipient given their public key.
-///
-/// [libsodium "sealed boxes"]: https://doc.libsodium.org/public-key_cryptography/sealed_boxes
-#[cfg(feature = "seal")]
-pub fn seal_open(recipient_sk: &SecretKey, ciphertext: &[u8]) -> Result<Vec<u8>, aead::Error> {
-    if ciphertext.len() <= KEY_SIZE {
-        return Err(aead::Error);
-    }
-    let ep_pk: [u8; KEY_SIZE] = ciphertext[..KEY_SIZE].try_into().unwrap();
-    let ep_pk = ep_pk.into();
-
-    let nonce = get_seal_nonce(&ep_pk, &recipient_sk.public_key());
-
-    let salsabox = SalsaBox::new(&ep_pk, recipient_sk);
-    aead::Aead::decrypt(&salsabox, &nonce, &ciphertext[KEY_SIZE..])
 }
 
 #[cfg(test)]

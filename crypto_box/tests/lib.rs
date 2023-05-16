@@ -180,15 +180,10 @@ fn seal() {
         0x54, 0x58, 0xb8, 0xa6, 0xbd, 0x71, 0x2d, 0xd8, 0x36, 0x55, 0x34, 0xc5, 0x67, 0xec,
     ];
 
-    use crypto_box::{seal, seal_open};
+    let pk = PublicKey::from(SEAL_PUBLIC_KEY);
+    let encrypted = pk.seal(&mut OsRng, SEAL_PLAINTEXT).unwrap();
 
-    let encrypted = seal(&mut OsRng, &SEAL_PUBLIC_KEY.into(), SEAL_PLAINTEXT).unwrap();
-    assert_eq!(
-        SEAL_PLAINTEXT,
-        seal_open(&SEAL_SECRET_KEY.into(), &encrypted).unwrap()
-    );
-    assert_eq!(
-        SEAL_PLAINTEXT,
-        seal_open(&SEAL_SECRET_KEY.into(), SEAL_CIPHERTEXT).unwrap()
-    );
+    let sk = SecretKey::from(SEAL_SECRET_KEY);
+    assert_eq!(SEAL_PLAINTEXT, sk.unseal(&encrypted).unwrap());
+    assert_eq!(SEAL_PLAINTEXT, sk.unseal(SEAL_CIPHERTEXT).unwrap());
 }

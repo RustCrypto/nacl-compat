@@ -6,6 +6,13 @@ use zeroize::Zeroize;
 #[cfg(feature = "rand_core")]
 use aead::rand_core::CryptoRngCore;
 
+#[cfg(feature = "seal")]
+use {
+    crate::{get_seal_nonce, SalsaBox},
+    aead::Aead,
+    alloc::vec::Vec,
+};
+
 #[cfg(feature = "serde")]
 use serdect::serde::{de, ser, Deserialize, Serialize};
 
@@ -35,6 +42,24 @@ impl SecretKey {
     /// the care they deserve!
     pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
         self.0.to_bytes()
+    }
+
+    /// Implementation of `crypto_box_seal_open` function from [libsodium "sealed boxes"].
+    ///
+    /// Sealed boxes are designed to anonymously send messages to a recipient given their public key.
+    ///
+    /// [libsodium "sealed boxes"]: https://doc.libsodium.org/public-key_cryptography/sealed_boxes
+    #[cfg(feature = "seal")]
+    pub fn unseal(&self, ciphertext: &[u8]) -> Result<Vec<u8>, aead::Error> {
+        if ciphertext.len() <= KEY_SIZE {
+            return Err(aead::Error);
+        }
+
+        let ephemeral_sk: [u8; KEY_SIZE] = ciphertext[..KEY_SIZE].try_into().unwrap();
+        let ephemeral_pk = ephemeral_sk.into();
+        let nonce = get_seal_nonce(&ephemeral_pk, &self.public_key());
+        let salsabox = SalsaBox::new(&ephemeral_pk, self);
+        salsabox.decrypt(&nonce, &ciphertext[KEY_SIZE..])
     }
 }
 
