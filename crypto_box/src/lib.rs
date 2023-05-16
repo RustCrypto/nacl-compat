@@ -166,6 +166,10 @@
 #[cfg(feature = "seal")]
 extern crate alloc;
 
+mod public_key;
+mod secret_key;
+
+pub use crate::{public_key::PublicKey, secret_key::SecretKey};
 pub use aead;
 pub use crypto_secretbox::Nonce;
 
@@ -177,16 +181,11 @@ use aead::{
     generic_array::GenericArray,
     AeadCore, AeadInPlace, Buffer, Error, KeyInit,
 };
-use core::{
-    cmp::Ordering,
-    fmt::{self, Debug},
-};
 use crypto_secretbox::{
     cipher::{IvSizeUser, KeyIvInit, KeySizeUser, StreamCipher},
     Kdf, SecretBox,
 };
-use curve25519_dalek::{MontgomeryPoint, Scalar};
-use zeroize::{Zeroize, Zeroizing};
+use zeroize::Zeroizing;
 
 #[cfg(feature = "chacha20")]
 use chacha20::ChaCha20Legacy as ChaCha20;
@@ -194,14 +193,8 @@ use chacha20::ChaCha20Legacy as ChaCha20;
 #[cfg(feature = "salsa20")]
 use salsa20::Salsa20;
 
-#[cfg(feature = "rand_core")]
-use aead::rand_core::CryptoRngCore;
-
 #[cfg(feature = "seal")]
-use alloc::vec::Vec;
-
-#[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
+use {aead::rand_core::CryptoRngCore, alloc::vec::Vec};
 
 /// Size of a `crypto_box` public or secret key in bytes.
 pub const KEY_SIZE: usize = 32;
@@ -218,168 +211,6 @@ const TAG_SIZE: usize = 16;
 #[cfg(feature = "seal")]
 /// Extra bytes for the ciphertext of a `crypto_box_seal` compared to the plaintext
 pub const SEALBYTES: usize = KEY_SIZE + TAG_SIZE;
-
-/// A `crypto_box` secret key.
-#[derive(Clone)]
-pub struct SecretKey(Scalar);
-
-impl SecretKey {
-    /// Generate a random [`SecretKey`].
-    #[cfg(feature = "rand_core")]
-    pub fn generate(csprng: &mut impl CryptoRngCore) -> Self {
-        let mut bytes = [0u8; KEY_SIZE];
-        csprng.fill_bytes(&mut bytes);
-        bytes.into()
-    }
-
-    /// Get the [`PublicKey`] which corresponds to this [`SecretKey`]
-    pub fn public_key(&self) -> PublicKey {
-        PublicKey(MontgomeryPoint::mul_base(&self.0))
-    }
-
-    /// Serialize [`SecretKey`] to bytes.
-    ///
-    /// # ⚠️Warning
-    ///
-    /// The serialized bytes are secret key material. Please treat them with
-    /// the care they deserve!
-    pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
-        self.0.to_bytes()
-    }
-}
-
-impl From<Scalar> for SecretKey {
-    fn from(value: Scalar) -> Self {
-        SecretKey(value)
-    }
-}
-
-impl From<[u8; KEY_SIZE]> for SecretKey {
-    fn from(bytes: [u8; KEY_SIZE]) -> SecretKey {
-        SecretKey(Scalar::from_bits_clamped(bytes))
-    }
-}
-
-impl Debug for SecretKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("SecretKey").finish_non_exhaustive()
-    }
-}
-
-impl Drop for SecretKey {
-    fn drop(&mut self) {
-        self.0.zeroize();
-    }
-}
-
-#[cfg(feature = "serde")]
-impl Serialize for SecretKey {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: ser::Serializer,
-    {
-        serdect::array::serialize_hex_upper_or_bin(self.0.as_bytes(), serializer)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de> Deserialize<'de> for SecretKey {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: de::Deserializer<'de>,
-    {
-        let mut bytes = [0u8; KEY_SIZE];
-        serdect::array::deserialize_hex_or_bin(&mut bytes, deserializer)?;
-        Ok(SecretKey::from(bytes))
-    }
-}
-
-/// A `crypto_box` public key.
-///
-/// This type can be serialized if the `serde` feature is enabled.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct PublicKey(MontgomeryPoint);
-
-impl PublicKey {
-    /// Create a public key from a slice. The bytes of the slice will be copied.
-    ///
-    /// This function will fail and return `None` if the length of the byte
-    /// slice isn't exactly [`KEY_SIZE`].
-    pub fn from_slice(slice: &[u8]) -> Option<Self> {
-        slice
-            .try_into()
-            .map(|bytes| PublicKey(MontgomeryPoint(bytes)))
-            .ok()
-    }
-
-    /// Borrow the public key as bytes.
-    pub fn as_bytes(&self) -> &[u8; KEY_SIZE] {
-        self.0.as_bytes()
-    }
-
-    /// Serialize this public key as bytes.
-    pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
-        self.0.to_bytes()
-    }
-}
-
-impl AsRef<[u8]> for PublicKey {
-    fn as_ref(&self) -> &[u8] {
-        self.as_bytes()
-    }
-}
-
-impl From<&SecretKey> for PublicKey {
-    fn from(secret_key: &SecretKey) -> PublicKey {
-        secret_key.public_key()
-    }
-}
-
-impl From<[u8; KEY_SIZE]> for PublicKey {
-    fn from(bytes: [u8; KEY_SIZE]) -> PublicKey {
-        PublicKey(MontgomeryPoint(bytes))
-    }
-}
-
-impl PartialOrd for PublicKey {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for PublicKey {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.as_bytes().cmp(other.as_bytes())
-    }
-}
-
-impl From<MontgomeryPoint> for PublicKey {
-    fn from(value: MontgomeryPoint) -> Self {
-        PublicKey(value)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl Serialize for PublicKey {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: ser::Serializer,
-    {
-        serdect::array::serialize_hex_upper_or_bin(self.as_bytes(), serializer)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de> Deserialize<'de> for PublicKey {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: de::Deserializer<'de>,
-    {
-        let mut bytes = [0u8; KEY_SIZE];
-        serdect::array::deserialize_hex_or_bin(&mut bytes, deserializer)?;
-        Ok(PublicKey::from(bytes)) // TODO(tarcieri): validate key
-    }
-}
 
 /// [`CryptoBox`] instantiated with [`ChaCha20`].
 #[cfg(feature = "chacha20")]
