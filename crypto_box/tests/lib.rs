@@ -3,11 +3,15 @@
 //! Adapted from PHP Sodium Compat's test vectors:
 //! <https://www.phpclasses.org/browse/file/122796.html>
 
-#![cfg(all(feature = "getrandom", feature = "std"))]
+#![cfg(all(
+    any(feature = "chacha20", feature = "salsa20"),
+    feature = "getrandom",
+    feature = "std"
+))]
 
 use crypto_box::{
     aead::{generic_array::GenericArray, Aead, AeadInPlace, OsRng},
-    PublicKey, SalsaBox, SecretKey,
+    PublicKey, SecretKey,
 };
 use hex_literal::hex;
 
@@ -114,8 +118,10 @@ macro_rules! impl_tests {
     };
 }
 
+#[cfg(feature = "salsa20")]
 mod xsalsa20poly1305 {
     use super::*;
+    use crypto_box::SalsaBox;
     const CIPHERTEXT: &[u8] = &[
         0xc0, 0x3f, 0x27, 0xd1, 0x88, 0xef, 0x65, 0xc, 0xd1, 0x29, 0x36, 0x91, 0x31, 0x37, 0xbb,
         0x17, 0xed, 0x4c, 0x98, 0xc2, 0x64, 0x89, 0x39, 0xe2, 0xe1, 0xd2, 0xe8, 0x55, 0x47, 0xa,

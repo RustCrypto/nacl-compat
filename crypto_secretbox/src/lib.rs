@@ -112,6 +112,7 @@
 //! [6]: https://tools.ietf.org/html/rfc8439
 
 pub use aead::{self, consts, AeadCore, AeadInPlace, Error, KeyInit, KeySizeUser};
+pub use cipher;
 
 use aead::{
     consts::{U0, U16, U24, U32, U8},

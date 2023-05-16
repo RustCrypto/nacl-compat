@@ -172,35 +172,33 @@ pub use crypto_secretbox::Nonce;
 #[cfg(feature = "rand_core")]
 pub use aead::rand_core;
 
-use aead::{consts::U16, generic_array::GenericArray};
+use aead::{
+    consts::{U0, U16, U24, U32, U8},
+    generic_array::GenericArray,
+    AeadCore, AeadInPlace, Buffer, Error, KeyInit,
+};
 use core::{
     cmp::Ordering,
     fmt::{self, Debug},
 };
-use curve25519_dalek::{MontgomeryPoint, Scalar};
-use zeroize::Zeroize;
-
-#[cfg(any(feature = "chacha20", feature = "salsa20"))]
-use {
-    aead::{
-        consts::{U0, U24},
-        AeadCore, AeadInPlace, Buffer, Error, KeyInit,
-    },
-    crypto_secretbox::Kdf,
-    zeroize::Zeroizing,
+use crypto_secretbox::{
+    cipher::{IvSizeUser, KeyIvInit, KeySizeUser, StreamCipher},
+    Kdf, SecretBox,
 };
+use curve25519_dalek::{MontgomeryPoint, Scalar};
+use zeroize::{Zeroize, Zeroizing};
 
 #[cfg(feature = "chacha20")]
-use crypto_secretbox::XChaCha20Poly1305;
+use chacha20::ChaCha20Legacy as ChaCha20;
+
+#[cfg(feature = "salsa20")]
+use salsa20::Salsa20;
 
 #[cfg(feature = "rand_core")]
 use aead::rand_core::CryptoRngCore;
 
 #[cfg(feature = "seal")]
 use alloc::vec::Vec;
-
-#[cfg(feature = "salsa20")]
-use crypto_secretbox::XSalsa20Poly1305;
 
 #[cfg(feature = "serde")]
 use serdect::serde::{de, ser, Deserialize, Serialize};
@@ -383,61 +381,16 @@ impl<'de> Deserialize<'de> for PublicKey {
     }
 }
 
-// TODO(tarcieri): replace with generic implementation
-#[cfg(any(feature = "chacha20", feature = "salsa20"))]
-macro_rules! impl_aead_in_place {
-    ($box:ty, $nonce_size:ty, $tag_size:ty, $ct_overhead:ty) => {
-        impl AeadCore for $box {
-            type NonceSize = $nonce_size;
-            type TagSize = $tag_size;
-            type CiphertextOverhead = $ct_overhead;
-        }
+/// [`CryptoBox`] instantiated with [`ChaCha20`].
+#[cfg(feature = "chacha20")]
+pub type ChaChaBox = CryptoBox<ChaCha20>;
 
-        impl AeadInPlace for $box {
-            fn encrypt_in_place(
-                &self,
-                nonce: &GenericArray<u8, Self::NonceSize>,
-                associated_data: &[u8],
-                buffer: &mut dyn Buffer,
-            ) -> Result<(), Error> {
-                self.0.encrypt_in_place(nonce, associated_data, buffer)
-            }
-
-            fn encrypt_in_place_detached(
-                &self,
-                nonce: &GenericArray<u8, Self::NonceSize>,
-                associated_data: &[u8],
-                buffer: &mut [u8],
-            ) -> Result<Tag, Error> {
-                self.0
-                    .encrypt_in_place_detached(nonce, associated_data, buffer)
-            }
-
-            fn decrypt_in_place(
-                &self,
-                nonce: &GenericArray<u8, Self::NonceSize>,
-                associated_data: &[u8],
-                buffer: &mut dyn Buffer,
-            ) -> Result<(), Error> {
-                self.0.decrypt_in_place(nonce, associated_data, buffer)
-            }
-
-            fn decrypt_in_place_detached(
-                &self,
-                nonce: &GenericArray<u8, Self::NonceSize>,
-                associated_data: &[u8],
-                buffer: &mut [u8],
-                tag: &Tag,
-            ) -> Result<(), Error> {
-                self.0
-                    .decrypt_in_place_detached(nonce, associated_data, buffer, tag)
-            }
-        }
-    };
-}
+/// [`CryptoBox`] instantiated with [`Salsa20`].
+#[cfg(feature = "salsa20")]
+pub type SalsaBox = CryptoBox<Salsa20>;
 
 /// Public-key encryption scheme based on the [X25519] Elliptic Curve
-/// Diffie-Hellman function and the [XSalsa20Poly1305] authenticated encryption
+/// Diffie-Hellman function and the [crypto_secretbox] authenticated encryption
 /// cipher.
 ///
 /// This type impls the [`aead::Aead`] trait, and otherwise functions as a
@@ -445,70 +398,84 @@ macro_rules! impl_aead_in_place {
 /// once instantiated.
 ///
 /// [X25519]: https://cr.yp.to/ecdh.html
-/// [XSalsa20Poly1305]: https://github.com/RustCrypto/AEADs/tree/master/xsalsa20poly1305
-#[cfg(feature = "salsa20")]
+/// [crypto_secretbox]: https://github.com/RustCrypto/nacl-compat/tree/master/crypto_secretbox
 #[derive(Clone)]
-pub struct SalsaBox(XSalsa20Poly1305);
-
-#[cfg(feature = "salsa20")]
-impl SalsaBox {
-    /// Create a new [`SalsaBox`], performing X25519 Diffie-Hellman to derive
-    /// a shared secret from the provided public and secret keys.
-    pub fn new(public_key: &PublicKey, secret_key: &SecretKey) -> Self {
-        let shared_secret = Zeroizing::new(secret_key.0 * public_key.0);
-
-        // Use HSalsa20 to create a uniformly random key from the shared secret
-        let mut key = XSalsa20Poly1305::kdf(
-            GenericArray::from_slice(&shared_secret.0),
-            &GenericArray::default(),
-        );
-
-        let cipher = XSalsa20Poly1305::new(&key);
-        key.zeroize();
-
-        SalsaBox(cipher)
-    }
+pub struct CryptoBox<C> {
+    secretbox: SecretBox<C>,
 }
 
-#[cfg(feature = "salsa20")]
-impl_aead_in_place!(SalsaBox, U24, U16, U0);
-
-/// Public-key encryption scheme based on the [X25519] Elliptic Curve
-/// Diffie-Hellman function and the [XChaCha20Poly1305] authenticated encryption
-/// cipher.
-///
-/// This type impls the [`aead::Aead`] trait, and otherwise functions as a
-/// symmetric Authenticated Encryption with Associated Data (AEAD) cipher
-/// once instantiated.
-///
-/// [X25519]: https://cr.yp.to/ecdh.html
-/// [XChaCha20Poly1305]: https://github.com/RustCrypto/AEADs/blob/master/chacha20poly1305/
-#[cfg(feature = "chacha20")]
-#[derive(Clone)]
-pub struct ChaChaBox(XChaCha20Poly1305);
-
-#[cfg(feature = "chacha20")]
-impl ChaChaBox {
-    /// Create a new [`ChaChaBox`], performing X25519 Diffie-Hellman to derive
+impl<C> CryptoBox<C> {
+    /// Create a new [`CryptoBox`], performing X25519 Diffie-Hellman to derive
     /// a shared secret from the provided public and secret keys.
-    pub fn new(public_key: &PublicKey, secret_key: &SecretKey) -> Self {
+    pub fn new(public_key: &PublicKey, secret_key: &SecretKey) -> Self
+    where
+        C: Kdf,
+    {
         let shared_secret = Zeroizing::new(secret_key.0 * public_key.0);
 
         // Use HChaCha20 to create a uniformly random key from the shared secret
-        let mut key = XChaCha20Poly1305::kdf(
+        let key = Zeroizing::new(C::kdf(
             GenericArray::from_slice(&shared_secret.0),
             &GenericArray::default(),
-        );
+        ));
 
-        let cipher = XChaCha20Poly1305::new(&key);
-        key.zeroize();
-
-        ChaChaBox(cipher)
+        Self {
+            secretbox: SecretBox::<C>::new(&*key),
+        }
     }
 }
 
-#[cfg(feature = "chacha20")]
-impl_aead_in_place!(ChaChaBox, U24, U16, U0);
+impl<C> AeadCore for CryptoBox<C> {
+    type NonceSize = U24;
+    type TagSize = U16;
+    type CiphertextOverhead = U0;
+}
+
+impl<C> AeadInPlace for CryptoBox<C>
+where
+    C: Kdf + KeyIvInit + KeySizeUser<KeySize = U32> + IvSizeUser<IvSize = U8> + StreamCipher,
+{
+    fn encrypt_in_place(
+        &self,
+        nonce: &GenericArray<u8, Self::NonceSize>,
+        associated_data: &[u8],
+        buffer: &mut dyn Buffer,
+    ) -> Result<(), Error> {
+        self.secretbox
+            .encrypt_in_place(nonce, associated_data, buffer)
+    }
+
+    fn encrypt_in_place_detached(
+        &self,
+        nonce: &GenericArray<u8, Self::NonceSize>,
+        associated_data: &[u8],
+        buffer: &mut [u8],
+    ) -> Result<Tag, Error> {
+        self.secretbox
+            .encrypt_in_place_detached(nonce, associated_data, buffer)
+    }
+
+    fn decrypt_in_place(
+        &self,
+        nonce: &GenericArray<u8, Self::NonceSize>,
+        associated_data: &[u8],
+        buffer: &mut dyn Buffer,
+    ) -> Result<(), Error> {
+        self.secretbox
+            .decrypt_in_place(nonce, associated_data, buffer)
+    }
+
+    fn decrypt_in_place_detached(
+        &self,
+        nonce: &GenericArray<u8, Self::NonceSize>,
+        associated_data: &[u8],
+        buffer: &mut [u8],
+        tag: &Tag,
+    ) -> Result<(), Error> {
+        self.secretbox
+            .decrypt_in_place_detached(nonce, associated_data, buffer, tag)
+    }
+}
 
 #[cfg(feature = "seal")]
 fn get_seal_nonce(ephemeral_pk: &PublicKey, recipient_pk: &PublicKey) -> Nonce {
