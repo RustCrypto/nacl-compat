@@ -369,19 +369,19 @@ mod tests {
         let array = [0; 40];
 
         // Returns None for empty array
-        assert!(PublicKey::from_slice(&[]).is_none());
+        assert!(PublicKey::from_slice(&[]).is_err());
 
         // Returns None for length <32
         for i in 1..=31 {
-            assert!(PublicKey::from_slice(&array[..i]).is_none());
+            assert!(PublicKey::from_slice(&array[..i]).is_err());
         }
 
         // Succeeds for length 32
-        assert!(PublicKey::from_slice(&array[..32]).is_some());
+        assert!(PublicKey::from_slice(&array[..32]).is_ok());
 
         // Returns None for length >32
         for i in 33..=40 {
-            assert!(PublicKey::from_slice(&array[..i]).is_none());
+            assert!(PublicKey::from_slice(&array[..i]).is_err());
         }
     }
 }
