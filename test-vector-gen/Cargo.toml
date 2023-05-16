@@ -7,4 +7,5 @@ publish = false
 
 [dependencies]
 hex = "0.4.3"
+hex-literal = "0.4"
 libsodium-sys-stable = "1"
