@@ -1,5 +1,5 @@
 use crate::{SecretKey, KEY_SIZE};
-use core::cmp::Ordering;
+use core::{array::TryFromSliceError, cmp::Ordering};
 use curve25519_dalek::MontgomeryPoint;
 
 #[cfg(feature = "seal")]
@@ -19,15 +19,17 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 pub struct PublicKey(pub(crate) MontgomeryPoint);
 
 impl PublicKey {
-    /// Create a public key from a slice. The bytes of the slice will be copied.
+    /// Initialize [`PublicKey`] from a byte array.
+    pub fn from_bytes(bytes: [u8; KEY_SIZE]) -> Self {
+        PublicKey(MontgomeryPoint(bytes))
+    }
+
+    /// Initialize [`PublicKey`] from a byte slice.
     ///
-    /// This function will fail and return `None` if the length of the byte
-    /// slice isn't exactly [`KEY_SIZE`].
-    pub fn from_slice(slice: &[u8]) -> Option<Self> {
-        slice
-            .try_into()
-            .map(|bytes| PublicKey(MontgomeryPoint(bytes)))
-            .ok()
+    /// Returns [`TryFromSliceError`] if the slice length is not exactly equal
+    /// to [`KEY_SIZE`].
+    pub fn from_slice(slice: &[u8]) -> Result<Self, TryFromSliceError> {
+        slice.try_into().map(Self::from_bytes)
     }
 
     /// Borrow the public key as bytes.
@@ -79,7 +81,15 @@ impl From<&SecretKey> for PublicKey {
 
 impl From<[u8; KEY_SIZE]> for PublicKey {
     fn from(bytes: [u8; KEY_SIZE]) -> PublicKey {
-        PublicKey(MontgomeryPoint(bytes))
+        Self::from_bytes(bytes)
+    }
+}
+
+impl TryFrom<&[u8]> for PublicKey {
+    type Error = TryFromSliceError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, TryFromSliceError> {
+        Self::from_slice(slice)
     }
 }
 

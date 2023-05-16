@@ -1,5 +1,8 @@
 use crate::{PublicKey, KEY_SIZE};
-use core::fmt::{self, Debug};
+use core::{
+    array::TryFromSliceError,
+    fmt::{self, Debug},
+};
 use curve25519_dalek::{MontgomeryPoint, Scalar};
 use zeroize::Zeroize;
 
@@ -21,6 +24,19 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 pub struct SecretKey(pub(crate) Scalar);
 
 impl SecretKey {
+    /// Initialize [`SecretKey`] from a byte array.
+    pub fn from_bytes(bytes: [u8; KEY_SIZE]) -> Self {
+        SecretKey(Scalar::from_bits_clamped(bytes))
+    }
+
+    /// Initialize [`SecretKey`] from a byte slice.
+    ///
+    /// Returns [`TryFromSliceError`] if the slice length is not exactly equal
+    /// to [`KEY_SIZE`].
+    pub fn from_slice(slice: &[u8]) -> Result<Self, TryFromSliceError> {
+        slice.try_into().map(Self::from_bytes)
+    }
+
     /// Generate a random [`SecretKey`].
     #[cfg(feature = "rand_core")]
     pub fn generate(csprng: &mut impl CryptoRngCore) -> Self {
@@ -71,7 +87,15 @@ impl From<Scalar> for SecretKey {
 
 impl From<[u8; KEY_SIZE]> for SecretKey {
     fn from(bytes: [u8; KEY_SIZE]) -> SecretKey {
-        SecretKey(Scalar::from_bits_clamped(bytes))
+        Self::from_bytes(bytes)
+    }
+}
+
+impl TryFrom<&[u8]> for SecretKey {
+    type Error = TryFromSliceError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, TryFromSliceError> {
+        Self::from_slice(slice)
     }
 }
 
