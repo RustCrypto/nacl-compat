@@ -173,9 +173,6 @@ pub use crate::{public_key::PublicKey, secret_key::SecretKey};
 pub use aead;
 pub use crypto_secretbox::Nonce;
 
-#[cfg(feature = "rand_core")]
-pub use aead::rand_core;
-
 use aead::{
     consts::{U0, U16, U24, U32, U8},
     generic_array::GenericArray,
