@@ -81,8 +81,9 @@
 //! The `crypto_box` construction was originally specified using [`SalsaBox`].
 //!
 //! However, the newer [`ChaChaBox`] construction is also available, which
-//! provides marginally better security and additional features such as
-//! additional associated data:
+//! provides better security and performance.
+//!
+//! To use it, enable the `chacha20` feature.
 //!
 #![cfg_attr(
     all(feature = "chacha20", feature = "getrandom", feature = "std"),
@@ -209,11 +210,11 @@ const TAG_SIZE: usize = 16;
 /// Extra bytes for the ciphertext of a `crypto_box_seal` compared to the plaintext
 pub const SEALBYTES: usize = KEY_SIZE + TAG_SIZE;
 
-/// [`CryptoBox`] instantiated with [`ChaCha20`].
+/// [`CryptoBox`] instantiated with the ChaCha20 stream cipher.
 #[cfg(feature = "chacha20")]
 pub type ChaChaBox = CryptoBox<ChaCha20>;
 
-/// [`CryptoBox`] instantiated with [`Salsa20`].
+/// [`CryptoBox`] instantiated with with the Salsa20 stream cipher.
 #[cfg(feature = "salsa20")]
 pub type SalsaBox = CryptoBox<Salsa20>;
 
