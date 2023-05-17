@@ -77,33 +77,6 @@
 //! # }
 //! ```
 //!
-//! ```
-//! # #[cfg(feature = "heapless")]
-//! # {
-//! use crypto_secretbox::XSalsa20Poly1305;
-//! use crypto_secretbox::aead::{AeadCore, AeadInPlace, KeyInit, generic_array::GenericArray};
-//! use crypto_secretbox::aead::heapless::Vec;
-//!
-//! let key = GenericArray::from_slice(b"an example very very secret key.");
-//! let cipher = XSalsa20Poly1305::new(key);
-//!
-//! let nonce = GenericArray::from_slice(b"extra long unique nonce!"); // 24-bytes; unique
-//!
-//! let mut buffer: Vec<u8, 128> = Vec::new();
-//! buffer.extend_from_slice(b"plaintext message");
-//!
-//! // Encrypt `buffer` in-place, replacing the plaintext contents with ciphertext
-//! cipher.encrypt_in_place(nonce, b"", &mut buffer).expect("encryption failure!");
-//!
-//! // `buffer` now contains the message ciphertext
-//! assert_ne!(&buffer, b"plaintext message");
-//!
-//! // Decrypt `buffer` in-place, replacing its ciphertext context with the original plaintext
-//! cipher.decrypt_in_place(nonce, b"", &mut buffer).expect("decryption failure!");
-//! assert_eq!(&buffer, b"plaintext message");
-//! # }
-//! ```
-//!
 //! [1]: https://nacl.cr.yp.to/secretbox.html
 //! [2]: https://en.wikipedia.org/wiki/Authenticated_encryption
 //! [3]: https://docs.rs/salsa20
