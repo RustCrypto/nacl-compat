@@ -258,7 +258,7 @@ dependencies = [
 
 [[package]]
 name = "crypto_kx"
-version = "0.2.0-pre"
+version = "0.2.0-pre.0"
 dependencies = [
  "blake2",
  "curve25519-dalek",
