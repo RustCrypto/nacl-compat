@@ -68,6 +68,6 @@ fn generate_xchacha20poly1305() {
     assert_eq!(ret, 0);
     println!(
         "CHACHA20POLY1305_SECRETBOX_CIPHERTEXT: &[u8] = &hex!(\"{}\");",
-        hex::encode(&ct)
+        hex::encode(ct)
     );
 }
