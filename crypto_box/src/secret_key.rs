@@ -21,12 +21,13 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 
 /// A `crypto_box` secret key.
 #[derive(Clone)]
-pub struct SecretKey(pub(crate) Scalar);
+pub struct SecretKey(pub(crate) [u8; KEY_SIZE]);
 
 impl SecretKey {
     /// Initialize [`SecretKey`] from a byte array.
+    #[inline]
     pub fn from_bytes(bytes: [u8; KEY_SIZE]) -> Self {
-        SecretKey(Scalar::from_bits_clamped(bytes))
+        SecretKey(bytes)
     }
 
     /// Initialize [`SecretKey`] from a byte slice.
@@ -47,7 +48,7 @@ impl SecretKey {
 
     /// Get the [`PublicKey`] which corresponds to this [`SecretKey`]
     pub fn public_key(&self) -> PublicKey {
-        PublicKey(MontgomeryPoint::mul_base(&self.0))
+        PublicKey(MontgomeryPoint::mul_base_clamped(self.0))
     }
 
     /// Serialize [`SecretKey`] to bytes.
@@ -57,7 +58,7 @@ impl SecretKey {
     /// The serialized bytes are secret key material. Please treat them with
     /// the care they deserve!
     pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
-        self.0.to_bytes()
+        self.0
     }
 
     /// Implementation of `crypto_box_seal_open` function from [libsodium "sealed boxes"].
@@ -81,7 +82,7 @@ impl SecretKey {
 
 impl From<Scalar> for SecretKey {
     fn from(value: Scalar) -> Self {
-        SecretKey(value)
+        SecretKey(value.to_bytes())
     }
 }
 
@@ -117,7 +118,7 @@ impl Serialize for SecretKey {
     where
         S: ser::Serializer,
     {
-        serdect::array::serialize_hex_upper_or_bin(self.0.as_bytes(), serializer)
+        serdect::array::serialize_hex_upper_or_bin(&self.0, serializer)
     }
 }
 

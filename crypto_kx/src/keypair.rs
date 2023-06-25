@@ -55,7 +55,7 @@ impl Keypair {
         debug_assert!(other_pubkey == client_pk || other_pubkey == server_pk);
 
         // Elliptic Curve Diffie-Hellman
-        let shared_secret = self.secret.0 * other_pubkey.0;
+        let shared_secret = other_pubkey.0.mul_clamped(self.secret.0);
 
         let mut hasher = Blake2b512::new();
 

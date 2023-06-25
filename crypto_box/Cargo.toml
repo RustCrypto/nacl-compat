@@ -20,7 +20,7 @@ rust-version = "1.60"
 [dependencies]
 aead = { version = "0.5.2", default-features = false }
 crypto_secretbox = { version = "0.1.1", default-features = false, path = "../crypto_secretbox" }
-curve25519-dalek = { version = "=4.0.0-rc.2", default-features = false, features = ["zeroize"] }
+curve25519-dalek = { version = "=4.0.0-rc.3", default-features = false, features = ["zeroize"] }
 zeroize = { version = "1", default-features = false }
 
 # optional dependencies
