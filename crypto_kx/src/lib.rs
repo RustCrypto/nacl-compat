@@ -13,8 +13,8 @@
 //! use rand_core::OsRng;
 //!
 //! // Each generates a key on their machine.
-//! let alice = Keypair::generate(OsRng);
-//! let betty = Keypair::generate(OsRng);
+//! let alice = Keypair::generate(&mut OsRng);
+//! let betty = Keypair::generate(&mut OsRng);
 //!
 //! // Then Alice decides to send a message to Betty, so she computes the shared keys.
 //! let alice_keys = alice.session_keys_to(betty.public());

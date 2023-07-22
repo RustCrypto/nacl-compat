@@ -3,8 +3,8 @@ use rand_core::OsRng;
 
 #[test]
 fn client_keys_is_reverse_from_server_keys() {
-    let client = Keypair::generate(OsRng);
-    let server = Keypair::generate(OsRng);
+    let client = Keypair::generate(&mut OsRng);
+    let server = Keypair::generate(&mut OsRng);
 
     let client_keys = client.session_keys_to(server.public());
     let server_keys = server.session_keys_from(client.public());

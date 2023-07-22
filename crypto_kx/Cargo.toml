@@ -1,6 +1,6 @@
 [package]
 name = "crypto_kx"
-version = "0.2.0-pre.0"
+version = "0.2.0"
 description = "Pure Rust implementation of libsodium's crypto_kx using BLAKE2"
 authors = ["C4DT", "RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
@@ -16,20 +16,17 @@ rust-version = "1.60"
 [dependencies]
 blake2 = { version = "0.10", default-features = false }
 curve25519-dalek = { version = "4", default-features = false, features = ["zeroize"] }
-rand_core = "0.6"
+rand_core = "0.6.4"
 
 # optional dependencies
 serdect = { version = "0.2", optional = true, default-features = false }
 
-[target.'cfg(target_family = "wasm")'.dependencies]
-getrandom = { version = "0.2", default-features = false, features = ["js"] }
-
 [dev-dependencies]
-rand_core = { version = "0.6", features = ["std"] }
+rand_core = { version = "0.6", features = ["getrandom"] }
 
 [features]
 serde = ["serdect"]
-std = ["blake2/std", "rand_core/std"]
+getrandom = ["rand_core/getrandom"]
 
 [package.metadata.docs.rs]
 features = ["serde", "seal"]

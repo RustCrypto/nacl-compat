@@ -1,5 +1,5 @@
 use blake2::{digest::generic_array::sequence::Split, Blake2b512, Digest};
-use rand_core::{CryptoRng, RngCore};
+use rand_core::CryptoRngCore;
 
 use crate::{ClientSessionKeys, PublicKey, SecretKey, ServerSessionKeys, SessionKey};
 
@@ -11,7 +11,7 @@ pub struct Keypair {
 
 impl Keypair {
     /// Generate a new random [`Keypair`].
-    pub fn generate(csprng: impl RngCore + CryptoRng) -> Self {
+    pub fn generate(csprng: &mut impl CryptoRngCore) -> Self {
         SecretKey::generate(csprng).into()
     }
 
