@@ -1,6 +1,6 @@
 [package]
 name = "crypto_kx"
-version = "0.2.0"
+version = "0.2.1"
 description = "Pure Rust implementation of libsodium's crypto_kx using BLAKE2"
 authors = ["C4DT", "RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
@@ -29,5 +29,5 @@ serde = ["serdect"]
 getrandom = ["rand_core/getrandom"]
 
 [package.metadata.docs.rs]
-features = ["serde", "seal"]
+features = ["serde"]
 rustdoc-args = ["--cfg", "docsrs"]

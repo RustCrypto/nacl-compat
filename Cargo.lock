@@ -204,7 +204,7 @@ dependencies = [
 
 [[package]]
 name = "crypto_kx"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "blake2",
  "curve25519-dalek",
@@ -229,7 +229,7 @@ dependencies = [
 
 [[package]]
 name = "crypto_secretstream"
-version = "0.2.0-pre"
+version = "0.2.0"
 dependencies = [
  "aead",
  "chacha20",
