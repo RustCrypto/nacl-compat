@@ -1,6 +1,6 @@
 [package]
 name = "crypto_secretstream"
-version = "0.2.0-pre"
+version = "0.2.0"
 description = """
 Pure Rust implementation of libsodium's crypto_secretstream secret-key using
 ChaCha20 and Poly1305
