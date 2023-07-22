@@ -15,7 +15,7 @@ rust-version = "1.60"
 
 [dependencies]
 blake2 = { version = "0.10", default-features = false }
-curve25519-dalek = { version = "4.0.0-rc.3", default-features = false, features = ["zeroize"] }
+curve25519-dalek = { version = "4", default-features = false, features = ["zeroize"] }
 rand_core = "0.6"
 
 # optional dependencies
