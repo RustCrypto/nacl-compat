@@ -78,6 +78,9 @@ impl SecretKey {
     /// value may not reflect the original scalar prior to clamping. We suggest
     /// you don't call this method when using `From<Scalar>` unless you know
     /// what you're doing.
+    ///
+    /// Calling [`SecretKey::to_scalar`] can be used to safely round-trip the
+    /// scalar value in such cases.
     pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
         self.bytes
     }
