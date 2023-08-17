@@ -65,6 +65,19 @@ impl SecretKey {
     ///
     /// The serialized bytes are secret key material. Please treat them with
     /// the care they deserve!
+    ///
+    /// # `Scalar` conversion notes
+    ///
+    /// If you are using the `From<Scalar>` impl on [`SecretKey`] (as opposed
+    /// to using [`SecretKey::from_bytes`] or one of the other methods that
+    /// decodes a secret key from bytes), this method will return the same
+    /// value as `Scalar::to_bytes`, which may reflect "clamping" if it was
+    /// applied to the original `Scalar`.
+    ///
+    /// In such cases, it may be undesirable to call this method, since such a
+    /// value may not reflect the original scalar prior to clamping. We suggest
+    /// you don't call this method when using `From<Scalar>` unless you know
+    /// what you're doing.
     pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
         self.bytes
     }
