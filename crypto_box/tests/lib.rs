@@ -13,6 +13,7 @@ use crypto_box::{
     aead::{generic_array::GenericArray, Aead, AeadInPlace, OsRng},
     PublicKey, SecretKey,
 };
+use curve25519_dalek::EdwardsPoint;
 use hex_literal::hex;
 
 // Alice's keypair
@@ -55,6 +56,16 @@ fn secret_and_public_keys() {
     dbg!(&secret_key);
 
     assert_eq!(secret_key.public_key().as_bytes(), &ALICE_PUBLIC_KEY);
+}
+
+#[test]
+fn edwards_to_montgomery() {
+    let secret_key = SecretKey::from(ALICE_SECRET_KEY);
+    let scalar = secret_key.to_scalar();
+    let point = EdwardsPoint::mul_base(&scalar);
+    let public_key = PublicKey::from(point.to_montgomery());
+    assert_eq!(secret_key.public_key(), public_key);
+    assert_eq!(secret_key, SecretKey::from(scalar));
 }
 
 macro_rules! impl_tests {

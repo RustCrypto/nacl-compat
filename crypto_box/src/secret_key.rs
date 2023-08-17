@@ -3,7 +3,11 @@ use core::{
     array::TryFromSliceError,
     fmt::{self, Debug},
 };
-use curve25519_dalek::{MontgomeryPoint, Scalar};
+use curve25519_dalek::{
+    scalar::{clamp_integer, Scalar},
+    MontgomeryPoint,
+};
+use subtle::ConstantTimeEq;
 use zeroize::Zeroize;
 
 #[cfg(feature = "rand_core")]
@@ -21,13 +25,17 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 
 /// A `crypto_box` secret key.
 #[derive(Clone)]
-pub struct SecretKey(pub(crate) [u8; KEY_SIZE]);
+pub struct SecretKey {
+    pub(crate) bytes: [u8; KEY_SIZE],
+    pub(crate) scalar: Scalar,
+}
 
 impl SecretKey {
     /// Initialize [`SecretKey`] from a byte array.
     #[inline]
     pub fn from_bytes(bytes: [u8; KEY_SIZE]) -> Self {
-        SecretKey(bytes)
+        let scalar = Scalar::from_bytes_mod_order(clamp_integer(bytes));
+        Self { bytes, scalar }
     }
 
     /// Initialize [`SecretKey`] from a byte slice.
@@ -48,7 +56,7 @@ impl SecretKey {
 
     /// Get the [`PublicKey`] which corresponds to this [`SecretKey`]
     pub fn public_key(&self) -> PublicKey {
-        PublicKey(MontgomeryPoint::mul_base_clamped(self.0))
+        PublicKey(MontgomeryPoint::mul_base(&self.scalar))
     }
 
     /// Serialize [`SecretKey`] to bytes.
@@ -58,7 +66,16 @@ impl SecretKey {
     /// The serialized bytes are secret key material. Please treat them with
     /// the care they deserve!
     pub fn to_bytes(&self) -> [u8; KEY_SIZE] {
-        self.0
+        self.bytes
+    }
+
+    /// Obtain the inner [`Scalar`] value of this [`SecretKey`].
+    ///
+    /// # ⚠️Warning
+    ///
+    /// This value is key material. Please treat it with the care it deserves!
+    pub fn to_scalar(&self) -> Scalar {
+        self.scalar
     }
 
     /// Implementation of `crypto_box_seal_open` function from [libsodium "sealed boxes"].
@@ -80,15 +97,36 @@ impl SecretKey {
     }
 }
 
+impl Debug for SecretKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SecretKey").finish_non_exhaustive()
+    }
+}
+
+impl Drop for SecretKey {
+    fn drop(&mut self) {
+        self.scalar.zeroize();
+    }
+}
+
+impl Eq for SecretKey {}
+
 impl From<Scalar> for SecretKey {
-    fn from(value: Scalar) -> Self {
-        SecretKey(value.to_bytes())
+    fn from(scalar: Scalar) -> Self {
+        let bytes = scalar.to_bytes();
+        SecretKey { bytes, scalar }
     }
 }
 
 impl From<[u8; KEY_SIZE]> for SecretKey {
     fn from(bytes: [u8; KEY_SIZE]) -> SecretKey {
         Self::from_bytes(bytes)
+    }
+}
+
+impl PartialEq for SecretKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.scalar.ct_eq(&other.scalar).into()
     }
 }
 
@@ -100,25 +138,13 @@ impl TryFrom<&[u8]> for SecretKey {
     }
 }
 
-impl Debug for SecretKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("SecretKey").finish_non_exhaustive()
-    }
-}
-
-impl Drop for SecretKey {
-    fn drop(&mut self) {
-        self.0.zeroize();
-    }
-}
-
 #[cfg(feature = "serde")]
 impl Serialize for SecretKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
     {
-        serdect::array::serialize_hex_upper_or_bin(&self.0, serializer)
+        serdect::array::serialize_hex_upper_or_bin(&self.to_bytes(), serializer)
     }
 }
 

@@ -199,6 +199,7 @@ dependencies = [
  "rmp-serde",
  "salsa20",
  "serdect",
+ "subtle",
  "zeroize",
 ]
 
