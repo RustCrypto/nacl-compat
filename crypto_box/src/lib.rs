@@ -229,9 +229,17 @@ pub type SalsaBox = CryptoBox<Salsa20>;
 ///
 /// [X25519]: https://cr.yp.to/ecdh.html
 /// [crypto_secretbox]: https://github.com/RustCrypto/nacl-compat/tree/master/crypto_secretbox
-#[derive(Clone)]
 pub struct CryptoBox<C> {
     secretbox: SecretBox<C>,
+}
+
+// Handwritten instead of derived to avoid `C: Clone` bound
+impl<C> Clone for CryptoBox<C> {
+    fn clone(&self) -> Self {
+        Self {
+            secretbox: self.secretbox.clone(),
+        }
+    }
 }
 
 impl<C> CryptoBox<C> {
