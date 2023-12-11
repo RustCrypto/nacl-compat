@@ -65,5 +65,5 @@ dual licensed as above, without any additional terms or conditions.
 [5]: https://cr.yp.to/chacha.html
 [6]: https://github.com/RustCrypto/universal-hashes/tree/master/poly1305
 [7]: https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305
-[8]: https://docs.rs/chacha20poly1305/latest/chacha20poly1305/struct.XChaCha20Poly1305.html
+[8]: https://docs.rs/chacha20poly1305/latest/chacha20poly1305/type.XChaCha20Poly1305.html
 [9]: https://tools.ietf.org/html/rfc8439
