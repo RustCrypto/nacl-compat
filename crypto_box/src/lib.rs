@@ -233,6 +233,17 @@ pub struct CryptoBox<C> {
     secretbox: SecretBox<C>,
 }
 
+impl<C> CryptoBox<C> {
+    /// Size of an XSalsa20Poly1305 key in bytes
+    pub const KEY_SIZE: usize = SecretBox::<C>::KEY_SIZE;
+
+    /// Size of an XSalsa20Poly1305 nonce in bytes
+    pub const NONCE_SIZE: usize = SecretBox::<C>::NONCE_SIZE;
+
+    /// Size of a Poly1305 tag in bytes
+    pub const TAG_SIZE: usize = SecretBox::<C>::TAG_SIZE;
+}
+
 // Handwritten instead of derived to avoid `C: Clone` bound
 impl<C> Clone for CryptoBox<C> {
     fn clone(&self) -> Self {
