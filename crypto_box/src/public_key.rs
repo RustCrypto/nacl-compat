@@ -15,7 +15,7 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 /// A `crypto_box` public key.
 ///
 /// This type can be serialized if the `serde` feature is enabled.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct PublicKey(pub(crate) MontgomeryPoint);
 
 impl PublicKey {
