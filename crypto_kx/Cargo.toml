@@ -19,7 +19,7 @@ curve25519-dalek = { version = "4", default-features = false, features = ["zeroi
 rand_core = "0.6.4"
 
 # optional dependencies
-serdect = { version = "0.2", optional = true, default-features = false }
+serdect = { version = "0.3", optional = true, default-features = false }
 
 [dev-dependencies]
 rand_core = { version = "0.6", features = ["getrandom"] }
