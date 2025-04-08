@@ -260,7 +260,7 @@ impl<C> CryptoBox<C> {
     where
         C: Kdf,
     {
-        let shared_secret = Zeroizing::new(secret_key.scalar * public_key.0);
+        let shared_secret = Zeroizing::new(public_key.0.mul_clamped(secret_key.bytes));
 
         // Use HChaCha20 to create a uniformly random key from the shared secret
         let key = Zeroizing::new(C::kdf(
