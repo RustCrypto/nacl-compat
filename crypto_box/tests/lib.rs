@@ -152,6 +152,7 @@ mod xsalsa20poly1305 {
 #[cfg(feature = "chacha20")]
 mod xchacha20poly1305 {
     use super::*;
+    use aead::Nonce;
     use crypto_box::ChaChaBox;
     const CIPHERTEXT: &[u8] = &hex!(
         "0cd5ed093de698c8e410d0d451df2f5283057376b947b9b7392b956e5d675f309218acce8cf85f6c"
@@ -161,6 +162,24 @@ mod xchacha20poly1305 {
     );
 
     impl_tests!(ChaChaBox, PLAINTEXT, CIPHERTEXT);
+
+    /// Implement test against shared secret being all zero
+    #[test]
+    fn test_public_key_on_twist() {
+        let alice_private_key: [u8; 32] =
+            hex!("78d37f87f45e76aae3b61e0f0b69db96d117f8b5fd8edc73785b64918d2c9f47");
+        let bob_public_key: [u8; 32] =
+            hex!("9ec59406d5f9fde97a5c49acb935023ae40fae1499c05d3277cfb9100487e5b8");
+        let nonce = hex!("979f38f433649e8aa1ad5a0334223f7c7dabc80231e8233a");
+        let plaintext: &[u8] = &[];
+        let ciphertext_expected = hex!("171e01986d83c429a2746212464d6782");
+
+        let ciphertext_computed = ChaChaBox::new(&bob_public_key.into(), &alice_private_key.into())
+            .encrypt(Nonce::<ChaChaBox>::from_slice(&nonce), plaintext)
+            .expect("Encryption should work");
+
+        assert_eq!(ciphertext_computed, ciphertext_expected)
+    }
 }
 
 #[cfg(feature = "seal")]

@@ -32,6 +32,7 @@ const BOXZEROBYTES: usize = 16;
 
 pub fn generate() {
     generate_xchacha20poly1305();
+    generate_xchacha20poly1305_public_key_on_twist();
 }
 
 fn generate_xchacha20poly1305() {
@@ -50,6 +51,32 @@ fn generate_xchacha20poly1305() {
     assert_eq!(ret, 0);
     println!(
         "CHACHA20POLY1305_BOX_CIPHERTEXT: &[u8] = &hex!(\"{}\");",
+        hex::encode(ct)
+    );
+}
+
+fn generate_xchacha20poly1305_public_key_on_twist() {
+    let alice_private_key: [u8; 32] =
+        hex!("78d37f87f45e76aae3b61e0f0b69db96d117f8b5fd8edc73785b64918d2c9f47");
+    let bob_public_key: [u8; 32] =
+        hex!("9ec59406d5f9fde97a5c49acb935023ae40fae1499c05d3277cfb9100487e5b8");
+    let nonce = hex!("979f38f433649e8aa1ad5a0334223f7c7dabc80231e8233a");
+    const PLAINTEXT: [u8; 0] = [];
+    let mut ct = [42u8; BOXZEROBYTES + PLAINTEXT.len()];
+
+    let ret = unsafe {
+        libsodium_sys::crypto_box_curve25519xchacha20poly1305_easy(
+            ct.as_mut_ptr(),
+            PLAINTEXT.as_ptr(),
+            PLAINTEXT.len() as u64,
+            nonce.as_ptr(),
+            bob_public_key.as_ptr(),
+            alice_private_key.as_ptr(),
+        )
+    };
+    assert_eq!(ret, 0);
+    println!(
+        "CHACHA20POLY1305_BOX_CIPHERTEXT_PUBLIC_KEY_ON_TWIST: &[u8] = &hex!(\"{}\");",
         hex::encode(ct)
     );
 }
