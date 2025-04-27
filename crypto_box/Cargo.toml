@@ -28,7 +28,7 @@ zeroize = { version = "1", default-features = false }
 chacha20 = { version = "0.9", optional = true }
 blake2 = { version = "0.10", optional = true, default-features = false }
 salsa20 = { version = "0.10", optional = true }
-serdect = { version = "0.2", optional = true, default-features = false }
+serdect = { version = "0.3", optional = true, default-features = false }
 
 [dev-dependencies]
 bincode = "1"
