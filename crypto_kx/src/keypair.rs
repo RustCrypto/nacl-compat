@@ -1,5 +1,5 @@
 use blake2::{digest::generic_array::sequence::Split, Blake2b512, Digest};
-use rand_core::CryptoRngCore;
+use rand_core::CryptoRng;
 
 use crate::{ClientSessionKeys, PublicKey, SecretKey, ServerSessionKeys, SessionKey};
 
@@ -11,7 +11,7 @@ pub struct Keypair {
 
 impl Keypair {
     /// Generate a new random [`Keypair`].
-    pub fn generate(csprng: &mut impl CryptoRngCore) -> Self {
+    pub fn generate(csprng: &mut impl CryptoRng) -> Self {
         SecretKey::generate(csprng).into()
     }
 
@@ -78,13 +78,13 @@ impl From<SecretKey> for Keypair {
 
 #[cfg(test)]
 mod tests {
-    use rand_core::OsRng;
+    use rand_core::{OsRng, TryRngCore};
 
     use super::*;
 
     #[test]
     fn from_secretkey_yield_same() {
-        let keypair = Keypair::generate(&mut OsRng);
+        let keypair = Keypair::generate(&mut OsRng.unwrap_err());
         let reconstructed_keypair = Keypair::from(SecretKey::from(keypair.secret().to_bytes()));
 
         assert_eq!(

@@ -4,23 +4,20 @@ use super::{
     errors::InvalidLength,
     nonce::{HChaCha20Nonce, Nonce},
 };
-use chacha20::cipher::{
-    consts::U24,
-    generic_array::{sequence::Split, GenericArray},
-};
-use rand_core::{CryptoRng, RngCore};
+use chacha20::cipher::{array::Array, consts::U24};
+use rand_core::CryptoRng;
 
 /// Header of the secret stream, can be sent as cleartext.
 #[derive(Clone, Copy)]
-pub struct Header(GenericArray<u8, U24>);
+pub struct Header(Array<u8, U24>);
 
 impl Header {
     /// Number of bytes used by the serialisation.
     pub const BYTES: usize = 24;
 
     /// Generate a new random [`Header`].
-    pub(super) fn generate(mut csprng: impl RngCore + CryptoRng) -> Self {
-        let mut bytes = GenericArray::<u8, U24>::default();
+    pub(super) fn generate(mut csprng: impl CryptoRng) -> Self {
+        let mut bytes = Array::<u8, U24>::default();
         csprng.fill_bytes(&mut bytes);
 
         Self(bytes)
@@ -61,13 +58,13 @@ impl TryFrom<&[u8]> for Header {
 
 #[cfg(test)]
 mod tests {
-    use rand_core::OsRng;
+    use rand_core::{OsRng, TryRngCore};
 
     use super::Header;
 
     #[test]
     fn can_be_constructed_by_serialized() {
-        let header = Header::generate(&mut OsRng);
+        let header = Header::generate(&mut OsRng.unwrap_err());
 
         let reconstructed_header = Header::from(header);
 

@@ -9,10 +9,10 @@
 //!
 //! ```rust
 //! use crypto_secretstream::*;
-//! use rand_core::OsRng;
+//! use rand_core::{OsRng, TryRngCore};
 //!
 //! // Generate a key
-//! let key = Key::generate(&mut OsRng);
+//! let key = Key::generate(&mut OsRng.unwrap_err());
 //!
 //! // Use some additional data
 //! let some_additional_data = b"It needs to be known in advance";
@@ -23,7 +23,7 @@
 //!
 //! // Create a stream to send messages, receive an header to send to the other
 //! // side (it can be known by a thirdparty without security issue).
-//! let (header, mut push_stream) = PushStream::init(&mut rand_core::OsRng, &key);
+//! let (header, mut push_stream) = PushStream::init(&mut rand_core::OsRng.unwrap_err(), &key);
 //!
 //! // Messages to send
 //! let mut first_message = Vec::from(&b"Top secret message we're encrypting"[..]);

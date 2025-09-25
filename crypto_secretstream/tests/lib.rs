@@ -30,9 +30,11 @@ fn two_pushstreams_dont_generate_same_ciphertext() {
 #[test]
 #[cfg(feature = "alloc")]
 fn pushstream_doesnt_generate_same_ciphertext_for_same_plaintext() {
-    let key = Key::generate(&mut OsRng);
+    use rand_core::TryRngCore;
 
-    let (_, mut stream) = PushStream::init(&mut rand_core::OsRng, &key);
+    let key = Key::generate(&mut OsRng.unwrap_err());
+
+    let (_, mut stream) = PushStream::init(&mut rand_core::OsRng.unwrap_err(), &key);
 
     let mut first_ciphertext = Vec::from(PLAINTEXT);
     stream
@@ -50,9 +52,11 @@ fn pushstream_doesnt_generate_same_ciphertext_for_same_plaintext() {
 #[test]
 #[cfg(feature = "alloc")]
 fn pushed_can_be_pulled() {
-    let key = Key::generate(&mut OsRng);
+    use rand_core::TryRngCore;
 
-    let (header, mut push_stream) = PushStream::init(&mut rand_core::OsRng, &key);
+    let key = Key::generate(&mut OsRng.unwrap_err());
+
+    let (header, mut push_stream) = PushStream::init(&mut rand_core::OsRng.unwrap_err(), &key);
     let mut pull_stream = PullStream::init(header, &key);
 
     let mut message = Vec::from(PLAINTEXT);

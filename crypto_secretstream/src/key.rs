@@ -1,7 +1,7 @@
 //! `crypto_secretstream` keys.
 
 use crate::errors::InvalidLength;
-use rand_core::{CryptoRng, RngCore};
+use rand_core::CryptoRng;
 
 /// Symmetric key used by [`crate::PushStream`] and [`crate::PullStream`].
 pub struct Key(chacha20::Key);
@@ -11,7 +11,7 @@ impl Key {
     pub const BYTES: usize = 32;
 
     /// Generate a new random [`Key`].
-    pub fn generate(mut csprng: impl RngCore + CryptoRng) -> Self {
+    pub fn generate(mut csprng: impl CryptoRng) -> Self {
         let mut bytes = chacha20::Key::default();
         csprng.fill_bytes(&mut bytes);
 
@@ -52,13 +52,13 @@ impl TryFrom<&[u8]> for Key {
 
 #[cfg(test)]
 mod tests {
-    use rand_core::OsRng;
+    use rand_core::{OsRng, TryRngCore};
 
     use super::Key;
 
     #[test]
     fn can_be_constructed_by_serialized() {
-        let key = Key::generate(&mut OsRng);
+        let key = Key::generate(&mut OsRng.unwrap_err());
 
         let reconstructed_key = Key::from(*key.as_ref());
 

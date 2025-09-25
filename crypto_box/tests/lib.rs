@@ -5,7 +5,7 @@
 
 #![cfg(all(
     any(feature = "chacha20", feature = "salsa20"),
-    feature = "getrandom",
+    feature = "rand_core",
     feature = "std"
 ))]
 

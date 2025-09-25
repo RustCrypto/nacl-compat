@@ -11,22 +11,22 @@ repository = "https://github.com/RustCrypto/nacl-compat"
 categories = ["cryptography", "no-std"]
 keywords = ["nacl", "libsodium", "public-key", "blake2"]
 edition = "2021"
-rust-version = "1.60"
+rust-version = "1.85.0"
 
 [dependencies]
 blake2 = { version = "0.10", default-features = false }
-curve25519-dalek = { version = "4", default-features = false, features = ["zeroize"] }
-rand_core = "0.6.4"
+curve25519-dalek = { version = "5.0.0-pre.1", default-features = false, features = ["zeroize"] }
+rand_core = "0.9"
 
 # optional dependencies
 serdect = { version = "0.2", optional = true, default-features = false }
 
 [dev-dependencies]
-rand_core = { version = "0.6", features = ["getrandom"] }
+rand_core = { version = "0.9", features = ["os_rng"] }
 
 [features]
 serde = ["serdect"]
-getrandom = ["rand_core/getrandom"]
+os_rng = ["rand_core/os_rng"]
 
 [package.metadata.docs.rs]
 features = ["serde"]

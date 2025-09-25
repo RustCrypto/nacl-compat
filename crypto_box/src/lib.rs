@@ -9,8 +9,8 @@
 
 //! ## Usage
 //!
-#![cfg_attr(all(feature = "getrandom", feature = "std"), doc = "```")]
-#![cfg_attr(not(all(feature = "getrandom", feature = "std")), doc = "```ignore")]
+#![cfg_attr(all(feature = "rand_core", feature = "std"), doc = "```")]
+#![cfg_attr(not(all(feature = "rand_core", feature = "std")), doc = "```ignore")]
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use crypto_box::{
 //!     aead::{Aead, AeadCore, OsRng},
@@ -87,11 +87,11 @@
 //! To use it, enable the `chacha20` feature.
 //!
 #![cfg_attr(
-    all(feature = "chacha20", feature = "getrandom", feature = "std"),
+    all(feature = "chacha20", feature = "rand_core", feature = "std"),
     doc = "```"
 )]
 #![cfg_attr(
-    not(all(feature = "chacha20", feature = "getrandom", feature = "std")),
+    not(all(feature = "chacha20", feature = "rand_core", feature = "std")),
     doc = "```ignore"
 )]
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -176,9 +176,9 @@ pub use aead;
 pub use crypto_secretbox::Nonce;
 
 use aead::{
-    consts::{U0, U16, U24, U32, U8},
-    generic_array::GenericArray,
-    AeadCore, AeadInPlace, Buffer, Error, KeyInit,
+    array::Array,
+    consts::{U16, U24, U32, U8},
+    AeadCore, AeadInOut, KeyInit,
 };
 use crypto_secretbox::{
     cipher::{IvSizeUser, KeyIvInit, KeySizeUser, StreamCipher},
@@ -198,7 +198,7 @@ pub const KEY_SIZE: usize = 32;
 /// Poly1305 tag.
 ///
 /// Implemented as an alias for [`GenericArray`].
-pub type Tag = GenericArray<u8, U16>;
+pub type Tag = Array<u8, U16>;
 
 /// Size of a Poly1305 tag in bytes.
 #[cfg(feature = "seal")]
@@ -263,10 +263,7 @@ impl<C> CryptoBox<C> {
         let shared_secret = Zeroizing::new(public_key.0.mul_clamped(secret_key.bytes));
 
         // Use HChaCha20 to create a uniformly random key from the shared secret
-        let key = Zeroizing::new(C::kdf(
-            GenericArray::from_slice(&shared_secret.0),
-            &GenericArray::default(),
-        ));
+        let key = Zeroizing::new(C::kdf((&shared_secret.0).into(), &Array::default()));
 
         Self {
             secretbox: SecretBox::<C>::new(&*key),
@@ -277,52 +274,32 @@ impl<C> CryptoBox<C> {
 impl<C> AeadCore for CryptoBox<C> {
     type NonceSize = U24;
     type TagSize = U16;
-    type CiphertextOverhead = U0;
+    const TAG_POSITION: aead::TagPosition = aead::TagPosition::Postfix;
 }
 
-impl<C> AeadInPlace for CryptoBox<C>
+impl<C> AeadInOut for CryptoBox<C>
 where
     C: Kdf + KeyIvInit + KeySizeUser<KeySize = U32> + IvSizeUser<IvSize = U8> + StreamCipher,
 {
-    fn encrypt_in_place(
+    fn encrypt_inout_detached(
         &self,
-        nonce: &GenericArray<u8, Self::NonceSize>,
+        nonce: &aead::Nonce<Self>,
         associated_data: &[u8],
-        buffer: &mut dyn Buffer,
-    ) -> Result<(), Error> {
+        buffer: aead::inout::InOutBuf<'_, '_, u8>,
+    ) -> aead::Result<aead::Tag<Self>> {
         self.secretbox
-            .encrypt_in_place(nonce, associated_data, buffer)
+            .encrypt_inout_detached(nonce, associated_data, buffer)
     }
 
-    fn encrypt_in_place_detached(
+    fn decrypt_inout_detached(
         &self,
-        nonce: &GenericArray<u8, Self::NonceSize>,
+        nonce: &aead::Nonce<Self>,
         associated_data: &[u8],
-        buffer: &mut [u8],
-    ) -> Result<Tag, Error> {
+        buffer: aead::inout::InOutBuf<'_, '_, u8>,
+        tag: &aead::Tag<Self>,
+    ) -> aead::Result<()> {
         self.secretbox
-            .encrypt_in_place_detached(nonce, associated_data, buffer)
-    }
-
-    fn decrypt_in_place(
-        &self,
-        nonce: &GenericArray<u8, Self::NonceSize>,
-        associated_data: &[u8],
-        buffer: &mut dyn Buffer,
-    ) -> Result<(), Error> {
-        self.secretbox
-            .decrypt_in_place(nonce, associated_data, buffer)
-    }
-
-    fn decrypt_in_place_detached(
-        &self,
-        nonce: &GenericArray<u8, Self::NonceSize>,
-        associated_data: &[u8],
-        buffer: &mut [u8],
-        tag: &Tag,
-    ) -> Result<(), Error> {
-        self.secretbox
-            .decrypt_in_place_detached(nonce, associated_data, buffer, tag)
+            .decrypt_inout_detached(nonce, associated_data, buffer, tag)
     }
 }
 
