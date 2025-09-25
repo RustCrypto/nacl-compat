@@ -236,6 +236,7 @@ dependencies = [
  "chacha20",
  "cipher",
  "hex-literal",
+ "hybrid-array",
  "poly1305",
  "salsa20",
  "subtle",

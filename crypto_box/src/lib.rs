@@ -176,13 +176,13 @@ pub use aead;
 pub use crypto_secretbox::Nonce;
 
 use aead::{
-    AeadCore, AeadInOut, KeyInit,
     array::Array,
-    consts::{U8, U16, U24, U32},
+    consts::{U16, U24, U32, U8},
+    AeadCore, AeadInOut, KeyInit,
 };
 use crypto_secretbox::{
-    Kdf, SecretBox,
     cipher::{IvSizeUser, KeyIvInit, KeySizeUser, StreamCipher},
+    Kdf, SecretBox,
 };
 use zeroize::Zeroizing;
 
