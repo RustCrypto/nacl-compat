@@ -176,13 +176,13 @@ pub use aead;
 pub use crypto_secretbox::Nonce;
 
 use aead::{
-    array::Array,
-    consts::{U16, U24, U32, U8},
     AeadCore, AeadInOut, KeyInit,
+    array::Array,
+    consts::{U8, U16, U24, U32},
 };
 use crypto_secretbox::{
-    cipher::{IvSizeUser, KeyIvInit, KeySizeUser, StreamCipher},
     Kdf, SecretBox,
+    cipher::{IvSizeUser, KeyIvInit, KeySizeUser, StreamCipher},
 };
 use zeroize::Zeroizing;
 
@@ -323,7 +323,7 @@ mod tests {
 
         // Random PK bytes
         let mut public_key_bytes = [0; 32];
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         rng.fill_bytes(&mut public_key_bytes);
 
         // Create public key
@@ -347,7 +347,7 @@ mod tests {
 
         // Random SK bytes
         let mut secret_key_bytes = [0; 32];
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         rng.fill_bytes(&mut secret_key_bytes);
 
         // Create secret key

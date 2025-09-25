@@ -25,9 +25,9 @@ subtle = { version = "2", default-features = false }
 zeroize = { version = "1", default-features = false }
 
 # optional dependencies
-chacha20 = { version = "0.9", optional = true }
-blake2 = { version = "0.10", optional = true, default-features = false }
-salsa20 = { version = "0.10", optional = true }
+chacha20 = { version = "0.10.0-rc.2", optional = true }
+blake2 = { version = "0.11.0-rc.2", optional = true, default-features = false }
+salsa20 = { version = "0.11.0-rc.1", optional = true }
 serdect = { version = "0.2", optional = true, default-features = false }
 
 [dev-dependencies]

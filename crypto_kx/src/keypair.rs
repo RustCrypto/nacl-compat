@@ -1,4 +1,5 @@
-use blake2::{digest::generic_array::sequence::Split, Blake2b512, Digest};
+use blake2::digest::consts::U32;
+use blake2::{Blake2b512, Digest};
 use rand_core::CryptoRng;
 
 use crate::{ClientSessionKeys, PublicKey, SecretKey, ServerSessionKeys, SessionKey};
@@ -63,7 +64,7 @@ impl Keypair {
         hasher.update(client_pk.as_ref());
         hasher.update(server_pk.as_ref());
 
-        let (rx, tx) = hasher.finalize().split();
+        let (rx, tx) = hasher.finalize().split::<U32>();
         let (rx, tx): ([u8; SessionKey::BYTES], [u8; SessionKey::BYTES]) = (rx.into(), tx.into());
         (SessionKey::from(rx), SessionKey::from(tx))
     }

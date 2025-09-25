@@ -10,11 +10,12 @@
 ))]
 
 use crypto_box::{
-    aead::{generic_array::GenericArray, Aead, AeadInPlace, OsRng},
+    aead::{array::Array, Aead, AeadInPlace},
     PublicKey, SecretKey,
 };
 use curve25519_dalek::EdwardsPoint;
 use hex_literal::hex;
+use rand::{rngs::OsRng, TryRngCore};
 
 // Alice's keypair
 const ALICE_SECRET_KEY: [u8; 32] =
@@ -44,7 +45,7 @@ const PLAINTEXT: &[u8] = &[
 
 #[test]
 fn generate_secret_key() {
-    SecretKey::generate(&mut OsRng);
+    SecretKey::generate(&mut OsRng.unwrap_err());
 }
 
 #[test]
@@ -74,7 +75,7 @@ macro_rules! impl_tests {
         fn encrypt() {
             let secret_key = SecretKey::from(ALICE_SECRET_KEY);
             let public_key = PublicKey::from(BOB_PUBLIC_KEY);
-            let nonce = GenericArray::from_slice(NONCE);
+            let nonce = NONCE.into();
 
             let ciphertext = <$box>::new(&public_key, &secret_key)
                 .encrypt(nonce, $plaintext)
@@ -87,7 +88,7 @@ macro_rules! impl_tests {
         fn encrypt_in_place_detached() {
             let secret_key = SecretKey::from(ALICE_SECRET_KEY);
             let public_key = PublicKey::from(BOB_PUBLIC_KEY);
-            let nonce = GenericArray::from_slice(NONCE);
+            let nonce = NONCE.into();
             let mut buffer = $plaintext.to_vec();
 
             let tag = <$box>::new(&public_key, &secret_key)
@@ -103,7 +104,7 @@ macro_rules! impl_tests {
         fn decrypt() {
             let secret_key = SecretKey::from(BOB_SECRET_KEY);
             let public_key = PublicKey::from(ALICE_PUBLIC_KEY);
-            let nonce = GenericArray::from_slice(NONCE);
+            let nonce = NONCE.into();
 
             let plaintext = <$box>::new(&public_key, &secret_key)
                 .decrypt(nonce, $ciphertext)
@@ -116,8 +117,8 @@ macro_rules! impl_tests {
         fn decrypt_in_place_detached() {
             let secret_key = SecretKey::from(BOB_SECRET_KEY);
             let public_key = PublicKey::from(ALICE_PUBLIC_KEY);
-            let nonce = GenericArray::from_slice(NONCE);
-            let tag = GenericArray::clone_from_slice(&$ciphertext[..16]);
+            let nonce = NONCE.into();
+            let tag: Array<u8, _> = $ciphertext[..16].try_into().unwrap();
             let mut buffer = $ciphertext[16..].to_vec();
 
             <$box>::new(&public_key, &secret_key)
@@ -211,7 +212,7 @@ fn seal() {
     ];
 
     let pk = PublicKey::from(SEAL_PUBLIC_KEY);
-    let encrypted = pk.seal(&mut OsRng, SEAL_PLAINTEXT).unwrap();
+    let encrypted = pk.seal(&mut OsRng.unwrap_err(), SEAL_PLAINTEXT).unwrap();
 
     let sk = SecretKey::from(SEAL_SECRET_KEY);
     assert_eq!(SEAL_PLAINTEXT, sk.unseal(&encrypted).unwrap());

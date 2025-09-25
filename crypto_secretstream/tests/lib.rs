@@ -8,11 +8,12 @@ const ASSOCIATED_DATA: &[u8] = b"beware of giving it away";
 #[cfg(feature = "heapless")]
 fn two_pushstreams_dont_generate_same_ciphertext() {
     use aead::heapless::Vec;
+    use rand_core::TryRngCore;
 
-    let key = Key::generate(&mut OsRng);
+    let key = Key::generate(&mut OsRng.unwrap_err());
 
-    let (_, mut first_stream) = PushStream::init(&mut rand_core::OsRng, &key);
-    let (_, mut second_stream) = PushStream::init(&mut rand_core::OsRng, &key);
+    let (_, mut first_stream) = PushStream::init(&mut OsRng.unwrap_err(), &key);
+    let (_, mut second_stream) = PushStream::init(&mut OsRng.unwrap_err(), &key);
 
     let mut first_ciphertext = Vec::<u8, 256>::from_slice(PLAINTEXT).expect("create first vec");
     first_stream
@@ -34,7 +35,7 @@ fn pushstream_doesnt_generate_same_ciphertext_for_same_plaintext() {
 
     let key = Key::generate(&mut OsRng.unwrap_err());
 
-    let (_, mut stream) = PushStream::init(&mut rand_core::OsRng.unwrap_err(), &key);
+    let (_, mut stream) = PushStream::init(&mut OsRng.unwrap_err(), &key);
 
     let mut first_ciphertext = Vec::from(PLAINTEXT);
     stream

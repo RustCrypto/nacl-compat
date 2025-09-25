@@ -99,7 +99,11 @@ use poly1305::Poly1305;
 use zeroize::{Zeroize, Zeroizing};
 
 #[cfg(feature = "chacha20")]
-use chacha20::{hchacha, ChaCha20Legacy as ChaCha20};
+use chacha20::hchacha;
+#[cfg(feature = "chacha20")]
+type ChaCha20Legacy = cipher::StreamCipherCoreWrapper<
+    chacha20::ChaChaCore<chacha20::R20, chacha20::variants::Legacy>,
+>;
 
 #[cfg(feature = "salsa20")]
 use salsa20::{hsalsa, Salsa20};
@@ -111,7 +115,7 @@ use cipher::consts::U10;
 pub type Key = Array<u8, U32>;
 
 /// Nonce type.
-pub type Nonce<C> = aead::Nonce<SecretBox<C>>;
+pub type Nonce = Array<u8, U24>;
 
 /// Poly1305 tag.
 pub type Tag<C> = aead::Tag<SecretBox<C>>;
@@ -133,7 +137,7 @@ pub type Tag<C> = aead::Tag<SecretBox<C>>;
 /// [`draft-irtf-cfrg-xchacha`]: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-xchacha
 /// [`chacha20poly1305::XChaCha20Poly1305`]: https://docs.rs/chacha20poly1305/latest/chacha20poly1305/type.XChaCha20Poly1305.html
 #[cfg(feature = "chacha20")]
-pub type XChaCha20Poly1305 = SecretBox<ChaCha20>;
+pub type XChaCha20Poly1305 = SecretBox<ChaCha20Legacy>;
 
 /// `crypto_secretbox` instantiated with the XSalsa20 stream cipher.
 #[cfg(feature = "salsa20")]
@@ -165,7 +169,7 @@ where
     C: Kdf + KeyIvInit + KeySizeUser<KeySize = U32> + IvSizeUser<IvSize = U8> + StreamCipher,
 {
     /// Initialize cipher instance and Poly1305 MAC.
-    fn init_cipher_and_mac(&self, nonce: &Nonce<C>) -> (C, Poly1305) {
+    fn init_cipher_and_mac(&self, nonce: &Nonce) -> (C, Poly1305) {
         let (nonce_prefix, nonce_suffix) = nonce.split::<U16>();
 
         let subkey = Zeroizing::new(C::kdf(&self.key, &nonce_prefix));
@@ -215,7 +219,7 @@ where
 {
     fn encrypt_inout_detached(
         &self,
-        nonce: &Nonce<C>,
+        nonce: &Nonce,
         associated_data: &[u8],
         mut buffer: InOutBuf<'_, '_, u8>,
     ) -> aead::Result<Tag<C>> {
@@ -231,7 +235,7 @@ where
 
     fn decrypt_inout_detached(
         &self,
-        nonce: &Nonce<Self>,
+        nonce: &Nonce,
         associated_data: &[u8],
         mut buffer: InOutBuf<'_, '_, u8>,
         tag: &Tag<Self>,
@@ -277,9 +281,9 @@ where
 }
 
 #[cfg(feature = "chacha20")]
-impl Kdf for ChaCha20 {
+impl Kdf for ChaCha20Legacy {
     fn kdf(key: &Key, nonce: &Array<u8, U16>) -> Key {
-        hchacha::<U10>(key, nonce)
+        hchacha::<chacha20::R20>(key, nonce)
     }
 }
 
