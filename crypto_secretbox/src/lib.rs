@@ -108,7 +108,7 @@ type ChaCha20Legacy = cipher::StreamCipherCoreWrapper<
 #[cfg(feature = "salsa20")]
 use salsa20::{hsalsa, Salsa20};
 
-#[cfg(any(feature = "chacha20", feature = "salsa20"))]
+#[cfg(feature = "salsa20")]
 use cipher::consts::U10;
 
 /// Key type.

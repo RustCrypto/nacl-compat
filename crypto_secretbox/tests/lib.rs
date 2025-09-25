@@ -6,7 +6,7 @@
 //! XSalsa20Poly1305 test vectors adapted from NaCl's `tests/secretbox.c` and
 //! `tests/secretbox.out`.
 
-#![cfg(any(feature = "chacha20", feature = "salsa20"))]
+#![cfg(all(any(feature = "chacha20", feature = "salsa20"), feature = "alloc"))]
 
 use hex_literal::hex;
 
