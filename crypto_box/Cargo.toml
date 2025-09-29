@@ -37,10 +37,11 @@ rand = "0.9"
 rmp-serde = "1"
 
 [features]
-default = ["alloc", "rand_core", "salsa20"]
+default = ["alloc", "os_rng", "salsa20"]
 alloc = ["aead/alloc"]
 std = []
 
+os_rng = ["aead/os_rng"]
 chacha20 = ["dep:chacha20", "crypto_secretbox/chacha20"]
 heapless = ["aead/heapless"]
 rand_core = ["aead/rand_core"]

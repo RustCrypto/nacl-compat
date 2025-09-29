@@ -10,7 +10,7 @@
 ))]
 
 use crypto_box::{
-    aead::{array::Array, Aead, AeadInPlace},
+    aead::{array::Array, inout::InOutBuf, Aead, AeadInOut},
     PublicKey, SecretKey,
 };
 use curve25519_dalek::EdwardsPoint;
@@ -85,14 +85,15 @@ macro_rules! impl_tests {
         }
 
         #[test]
-        fn encrypt_in_place_detached() {
+        fn encrypt_inout_detached() {
             let secret_key = SecretKey::from(ALICE_SECRET_KEY);
             let public_key = PublicKey::from(BOB_PUBLIC_KEY);
             let nonce = NONCE.into();
             let mut buffer = $plaintext.to_vec();
+            let buf = InOutBuf::<u8>::from(&mut buffer[..]);
 
             let tag = <$box>::new(&public_key, &secret_key)
-                .encrypt_in_place_detached(nonce, b"", &mut buffer)
+                .encrypt_inout_detached(nonce, b"", buf)
                 .unwrap();
 
             let (expected_tag, expected_ciphertext) = $ciphertext.split_at(16);
@@ -114,15 +115,16 @@ macro_rules! impl_tests {
         }
 
         #[test]
-        fn decrypt_in_place_detached() {
+        fn decrypt_inout_detached() {
             let secret_key = SecretKey::from(BOB_SECRET_KEY);
             let public_key = PublicKey::from(ALICE_PUBLIC_KEY);
             let nonce = NONCE.into();
             let tag: Array<u8, _> = $ciphertext[..16].try_into().unwrap();
             let mut buffer = $ciphertext[16..].to_vec();
+            let buf = InOutBuf::from(&mut buffer[..]);
 
             <$box>::new(&public_key, &secret_key)
-                .decrypt_in_place_detached(nonce, b"", &mut buffer, &tag)
+                .decrypt_inout_detached(nonce, b"", buf, &tag)
                 .unwrap();
 
             assert_eq!($plaintext, &buffer[..]);
