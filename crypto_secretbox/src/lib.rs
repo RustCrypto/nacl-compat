@@ -10,17 +10,17 @@
 
 //! # Usage
 //!
-#![cfg_attr(all(feature = "rand_core", feature = "std"), doc = "```")]
-#![cfg_attr(not(all(feature = "rand_core", feature = "std")), doc = "```ignore")]
+#![cfg_attr(all(feature = "os_rng", feature = "std"), doc = "```")]
+#![cfg_attr(not(all(feature = "os_rng", feature = "std")), doc = "```ignore")]
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use crypto_secretbox::{
-//!     aead::{Aead, AeadCore, KeyInit, OsRng},
+//!     aead::{Aead, AeadCore, KeyInit, rand_core::{OsRng, TryRngCore}},
 //!     XSalsa20Poly1305, Nonce
 //! };
 //!
-//! let key = XSalsa20Poly1305::generate_key(&mut OsRng);
+//! let key = XSalsa20Poly1305::generate_key_with_rng(&mut OsRng.unwrap_err());
 //! let cipher = XSalsa20Poly1305::new(&key);
-//! let nonce = XSalsa20Poly1305::generate_nonce(&mut OsRng); // unique per message
+//! let nonce = XSalsa20Poly1305::generate_nonce_with_rng(&mut OsRng.unwrap_err()); // unique per message
 //! let ciphertext = cipher.encrypt(&nonce, b"plaintext message".as_ref())?;
 //! let plaintext = cipher.decrypt(&nonce, ciphertext.as_ref())?;
 //! assert_eq!(&plaintext, b"plaintext message");
@@ -44,22 +44,22 @@
 //! and decrypt methods:
 //!
 #![cfg_attr(
-    all(feature = "getrandom", feature = "heapless", feature = "std"),
+    all(feature = "os_rng", feature = "heapless", feature = "std"),
     doc = "```"
 )]
 #![cfg_attr(
-    not(all(feature = "getrandom", feature = "heapless", feature = "std")),
+    not(all(feature = "os_rng", feature = "heapless", feature = "std")),
     doc = "```ignore"
 )]
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use crypto_secretbox::{
-//!     aead::{AeadCore, AeadInPlace, KeyInit, OsRng, heapless::Vec},
+//!     aead::{AeadCore, AeadInPlace, KeyInit, rand_core::{OsRng, TryRngCore}, heapless::Vec},
 //!     XSalsa20Poly1305, Nonce,
 //! };
 //!
-//! let key = XSalsa20Poly1305::generate_key(&mut OsRng);
+//! let key = XSalsa20Poly1305::generate_key_with_rng(&mut OsRng.unwrap_err());
 //! let cipher = XSalsa20Poly1305::new(&key);
-//! let nonce = XSalsa20Poly1305::generate_nonce(&mut OsRng); // unique per message
+//! let nonce = XSalsa20Poly1305::generate_nonce_with_rng(&mut OsRng.unwrap_err()); // unique per message
 //!
 //! let mut buffer: Vec<u8, 128> = Vec::new(); // Note: buffer needs 16-bytes overhead for auth tag
 //! buffer.extend_from_slice(b"plaintext message");

@@ -33,13 +33,13 @@ salsa20 = { version = "=0.11.0-rc.1", optional = true, features = ["zeroize"] }
 hex-literal = "0.4"
 
 [features]
-default = ["alloc", "getrandom", "salsa20"]
+default = ["alloc", "os_rng", "salsa20"]
 alloc = ["aead/alloc"]
 std = ["alloc"]
 
-getrandom  = ["aead/rand_core", "rand_core"]
 heapless = ["aead/heapless"]
 rand_core = ["aead/rand_core"]
+os_rng = ["aead/os_rng"]
 
 [package.metadata.docs.rs]
 all-features = true
