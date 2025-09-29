@@ -2,7 +2,7 @@
 
 use aead::{
     consts::{U12, U4, U8},
-    AeadCore, AeadInOut, AeadInPlace, Buffer, KeyInit, Result,
+    AeadCore, AeadInOut, Buffer, KeyInit, Result,
 };
 use chacha20::{
     cipher::{array::Array, consts::U16, KeyIvInit, StreamCipher, StreamCipherSeek},
@@ -178,9 +178,10 @@ impl PushStream {
             .map_err(|_| aead::Error)?;
         buffer.as_mut().rotate_right(1);
 
-        let mac =
-            self.0
-                .encrypt_in_place_detached(&cipher_nonce, associated_data, buffer.as_mut())?;
+        let inout = aead::inout::InOutBuf::<u8>::from(buffer.as_mut());
+        let mac = self
+            .0
+            .encrypt_inout_detached(&cipher_nonce, associated_data, inout)?;
         buffer.extend_from_slice(&mac).map_err(|_| aead::Error)?;
 
         self.0.update_state(mac, tag)?;
@@ -209,8 +210,9 @@ impl PullStream {
             .expect("known size");
         buffer.truncate(buffer.len() - MAC_BLOCK_SIZE);
 
+        let inout = aead::inout::InOutBuf::<u8>::from(buffer.as_mut());
         self.0
-            .decrypt_in_place_detached(&cipher_nonce, associated_data, buffer.as_mut(), &mac)?;
+            .decrypt_inout_detached(&cipher_nonce, associated_data, inout, &mac)?;
         let tag = Tag::try_from(buffer.as_ref()[0]).map_err(|_| aead::Error)?;
         buffer.as_mut().rotate_left(1);
         buffer.truncate(buffer.len() - 1);

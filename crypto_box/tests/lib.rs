@@ -85,6 +85,20 @@ macro_rules! impl_tests {
         }
 
         #[test]
+        fn encrypt_in_place() {
+            let secret_key = SecretKey::from(ALICE_SECRET_KEY);
+            let public_key = PublicKey::from(BOB_PUBLIC_KEY);
+            let nonce = NONCE.into();
+
+            let mut ciphertext = $plaintext.to_vec();
+            <$box>::new(&public_key, &secret_key)
+                .encrypt_in_place(nonce, &[], &mut ciphertext)
+                .unwrap();
+
+            assert_eq!($ciphertext, &ciphertext[..]);
+        }
+
+        #[test]
         fn encrypt_inout_detached() {
             let secret_key = SecretKey::from(ALICE_SECRET_KEY);
             let public_key = PublicKey::from(BOB_PUBLIC_KEY);
@@ -109,6 +123,20 @@ macro_rules! impl_tests {
 
             let plaintext = <$box>::new(&public_key, &secret_key)
                 .decrypt(nonce, $ciphertext)
+                .unwrap();
+
+            assert_eq!($plaintext, &plaintext[..]);
+        }
+
+        #[test]
+        fn decrypt_in_place() {
+            let secret_key = SecretKey::from(BOB_SECRET_KEY);
+            let public_key = PublicKey::from(ALICE_PUBLIC_KEY);
+            let nonce = NONCE.into();
+
+            let mut plaintext = $ciphertext.to_vec();
+            <$box>::new(&public_key, &secret_key)
+                .decrypt_in_place(nonce, &[], &mut plaintext)
                 .unwrap();
 
             assert_eq!($plaintext, &plaintext[..]);
@@ -178,7 +206,7 @@ mod xchacha20poly1305 {
         let ciphertext_expected = hex!("171e01986d83c429a2746212464d6782");
 
         let ciphertext_computed = ChaChaBox::new(&bob_public_key.into(), &alice_private_key.into())
-            .encrypt(Nonce::<ChaChaBox>::from_slice(&nonce), plaintext)
+            .encrypt(&Nonce::<ChaChaBox>::from(nonce), plaintext)
             .expect("Encryption should work");
 
         assert_eq!(ciphertext_computed, ciphertext_expected)
