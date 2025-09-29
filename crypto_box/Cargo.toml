@@ -40,7 +40,7 @@ ed25519-dalek = { version = "3.0.0-pre.1", features = ["rand_core"] }
 [features]
 default = ["alloc", "os_rng", "rand_core", "salsa20"]
 alloc = ["aead/alloc"]
-std = []
+std = ["alloc"]
 
 os_rng = ["aead/os_rng"]
 chacha20 = ["dep:chacha20", "crypto_secretbox/chacha20"]

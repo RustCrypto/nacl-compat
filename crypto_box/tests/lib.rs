@@ -250,7 +250,7 @@ fn seal() {
     assert_eq!(SEAL_PLAINTEXT, sk.unseal(SEAL_CIPHERTEXT).unwrap());
 }
 
-#[cfg(feature = "seal")]
+#[cfg(feature = "chacha20")]
 #[test]
 fn test_seal_regression() {
     let mut rng = rand::rng();
@@ -268,6 +268,7 @@ fn test_seal_regression() {
     seal_open_roundtrip(&key_b, &key_a);
 }
 
+#[cfg(feature = "chacha20")]
 fn seal_open_roundtrip(this: &ed25519_dalek::SigningKey, other: &ed25519_dalek::SigningKey) {
     let msg = b"super secret message!!!!".to_vec();
     let nonce = crypto_box::ChaChaBox::try_generate_nonce_with_rng(&mut rand::rngs::OsRng)
