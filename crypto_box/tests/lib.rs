@@ -9,7 +9,6 @@
     feature = "std"
 ))]
 
-use aead::AeadCore;
 use crypto_box::{
     aead::{array::Array, inout::InOutBuf, Aead, AeadInOut},
     PublicKey, SecretKey,
@@ -270,6 +269,8 @@ fn test_seal_regression() {
 
 #[cfg(feature = "chacha20")]
 fn seal_open_roundtrip(this: &ed25519_dalek::SigningKey, other: &ed25519_dalek::SigningKey) {
+    use aead::AeadCore;
+
     let msg = b"super secret message!!!!".to_vec();
     let nonce = crypto_box::ChaChaBox::try_generate_nonce_with_rng(&mut rand::rngs::OsRng)
         .expect("not enough randomness");
