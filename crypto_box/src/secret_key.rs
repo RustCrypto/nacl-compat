@@ -11,7 +11,7 @@ use subtle::ConstantTimeEq;
 use zeroize::Zeroize;
 
 #[cfg(feature = "rand_core")]
-use aead::rand_core::CryptoRngCore;
+use aead::rand_core::CryptoRng;
 
 #[cfg(feature = "seal")]
 use {
@@ -48,7 +48,7 @@ impl SecretKey {
 
     /// Generate a random [`SecretKey`].
     #[cfg(feature = "rand_core")]
-    pub fn generate(csprng: &mut impl CryptoRngCore) -> Self {
+    pub fn generate(csprng: &mut impl CryptoRng) -> Self {
         let mut bytes = [0u8; KEY_SIZE];
         csprng.fill_bytes(&mut bytes);
         bytes.into()

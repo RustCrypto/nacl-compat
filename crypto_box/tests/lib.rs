@@ -5,16 +5,17 @@
 
 #![cfg(all(
     any(feature = "chacha20", feature = "salsa20"),
-    feature = "getrandom",
+    feature = "rand_core",
     feature = "std"
 ))]
 
 use crypto_box::{
-    aead::{generic_array::GenericArray, Aead, AeadInPlace, OsRng},
+    aead::{array::Array, inout::InOutBuf, Aead, AeadInOut},
     PublicKey, SecretKey,
 };
 use curve25519_dalek::EdwardsPoint;
 use hex_literal::hex;
+use rand::{rngs::OsRng, TryRngCore};
 
 // Alice's keypair
 const ALICE_SECRET_KEY: [u8; 32] =
@@ -44,7 +45,7 @@ const PLAINTEXT: &[u8] = &[
 
 #[test]
 fn generate_secret_key() {
-    SecretKey::generate(&mut OsRng);
+    SecretKey::generate(&mut OsRng.unwrap_err());
 }
 
 #[test]
@@ -74,7 +75,7 @@ macro_rules! impl_tests {
         fn encrypt() {
             let secret_key = SecretKey::from(ALICE_SECRET_KEY);
             let public_key = PublicKey::from(BOB_PUBLIC_KEY);
-            let nonce = GenericArray::from_slice(NONCE);
+            let nonce = NONCE.into();
 
             let ciphertext = <$box>::new(&public_key, &secret_key)
                 .encrypt(nonce, $plaintext)
@@ -84,14 +85,29 @@ macro_rules! impl_tests {
         }
 
         #[test]
-        fn encrypt_in_place_detached() {
+        fn encrypt_in_place() {
             let secret_key = SecretKey::from(ALICE_SECRET_KEY);
             let public_key = PublicKey::from(BOB_PUBLIC_KEY);
-            let nonce = GenericArray::from_slice(NONCE);
+            let nonce = NONCE.into();
+
+            let mut ciphertext = $plaintext.to_vec();
+            <$box>::new(&public_key, &secret_key)
+                .encrypt_in_place(nonce, &[], &mut ciphertext)
+                .unwrap();
+
+            assert_eq!($ciphertext, &ciphertext[..]);
+        }
+
+        #[test]
+        fn encrypt_inout_detached() {
+            let secret_key = SecretKey::from(ALICE_SECRET_KEY);
+            let public_key = PublicKey::from(BOB_PUBLIC_KEY);
+            let nonce = NONCE.into();
             let mut buffer = $plaintext.to_vec();
+            let buf = InOutBuf::<u8>::from(&mut buffer[..]);
 
             let tag = <$box>::new(&public_key, &secret_key)
-                .encrypt_in_place_detached(nonce, b"", &mut buffer)
+                .encrypt_inout_detached(nonce, b"", buf)
                 .unwrap();
 
             let (expected_tag, expected_ciphertext) = $ciphertext.split_at(16);
@@ -103,7 +119,7 @@ macro_rules! impl_tests {
         fn decrypt() {
             let secret_key = SecretKey::from(BOB_SECRET_KEY);
             let public_key = PublicKey::from(ALICE_PUBLIC_KEY);
-            let nonce = GenericArray::from_slice(NONCE);
+            let nonce = NONCE.into();
 
             let plaintext = <$box>::new(&public_key, &secret_key)
                 .decrypt(nonce, $ciphertext)
@@ -113,15 +129,30 @@ macro_rules! impl_tests {
         }
 
         #[test]
-        fn decrypt_in_place_detached() {
+        fn decrypt_in_place() {
             let secret_key = SecretKey::from(BOB_SECRET_KEY);
             let public_key = PublicKey::from(ALICE_PUBLIC_KEY);
-            let nonce = GenericArray::from_slice(NONCE);
-            let tag = GenericArray::clone_from_slice(&$ciphertext[..16]);
+            let nonce = NONCE.into();
+
+            let mut plaintext = $ciphertext.to_vec();
+            <$box>::new(&public_key, &secret_key)
+                .decrypt_in_place(nonce, &[], &mut plaintext)
+                .unwrap();
+
+            assert_eq!($plaintext, &plaintext[..]);
+        }
+
+        #[test]
+        fn decrypt_inout_detached() {
+            let secret_key = SecretKey::from(BOB_SECRET_KEY);
+            let public_key = PublicKey::from(ALICE_PUBLIC_KEY);
+            let nonce = NONCE.into();
+            let tag: Array<u8, _> = $ciphertext[..16].try_into().unwrap();
             let mut buffer = $ciphertext[16..].to_vec();
+            let buf = InOutBuf::from(&mut buffer[..]);
 
             <$box>::new(&public_key, &secret_key)
-                .decrypt_in_place_detached(nonce, b"", &mut buffer, &tag)
+                .decrypt_inout_detached(nonce, b"", buf, &tag)
                 .unwrap();
 
             assert_eq!($plaintext, &buffer[..]);
@@ -175,7 +206,7 @@ mod xchacha20poly1305 {
         let ciphertext_expected = hex!("171e01986d83c429a2746212464d6782");
 
         let ciphertext_computed = ChaChaBox::new(&bob_public_key.into(), &alice_private_key.into())
-            .encrypt(Nonce::<ChaChaBox>::from_slice(&nonce), plaintext)
+            .encrypt(&Nonce::<ChaChaBox>::from(nonce), plaintext)
             .expect("Encryption should work");
 
         assert_eq!(ciphertext_computed, ciphertext_expected)
@@ -211,9 +242,62 @@ fn seal() {
     ];
 
     let pk = PublicKey::from(SEAL_PUBLIC_KEY);
-    let encrypted = pk.seal(&mut OsRng, SEAL_PLAINTEXT).unwrap();
+    let encrypted = pk.seal(&mut OsRng.unwrap_err(), SEAL_PLAINTEXT).unwrap();
 
     let sk = SecretKey::from(SEAL_SECRET_KEY);
     assert_eq!(SEAL_PLAINTEXT, sk.unseal(&encrypted).unwrap());
     assert_eq!(SEAL_PLAINTEXT, sk.unseal(SEAL_CIPHERTEXT).unwrap());
+}
+
+#[cfg(feature = "chacha20")]
+#[test]
+fn test_seal_regression() {
+    let mut rng = rand::rng();
+    let key_a = ed25519_dalek::SigningKey::generate(&mut rng);
+    let key_b = ed25519_dalek::SigningKey::generate(&mut rng);
+
+    println!("a -> a");
+    seal_open_roundtrip(&key_a, &key_a);
+    println!("b -> b");
+    seal_open_roundtrip(&key_b, &key_b);
+
+    println!("a -> b");
+    seal_open_roundtrip(&key_a, &key_b);
+    println!("b -> a");
+    seal_open_roundtrip(&key_b, &key_a);
+}
+
+#[cfg(feature = "chacha20")]
+fn seal_open_roundtrip(this: &ed25519_dalek::SigningKey, other: &ed25519_dalek::SigningKey) {
+    use aead::AeadCore;
+
+    let msg = b"super secret message!!!!".to_vec();
+    let nonce = crypto_box::ChaChaBox::try_generate_nonce_with_rng(&mut rand::rngs::OsRng)
+        .expect("not enough randomness");
+
+    let shared_a = {
+        let secret_key = crypto_box::SecretKey::from(this.to_scalar());
+        let public_key = crypto_box::PublicKey::from(other.verifying_key().to_montgomery());
+
+        crypto_box::ChaChaBox::from_clamped(&public_key, &secret_key)
+    };
+
+    let mut sealed_message = msg.clone();
+    shared_a
+        .encrypt_in_place(&nonce, &[], &mut sealed_message)
+        .expect("encryption failed");
+
+    let shared_b = {
+        let secret_key = crypto_box::SecretKey::from(other.to_scalar());
+        let public_key = crypto_box::PublicKey::from(this.verifying_key().to_montgomery());
+
+        crypto_box::ChaChaBox::from_clamped(&public_key, &secret_key)
+    };
+    let mut decrypted_message = sealed_message.clone();
+
+    shared_b
+        .decrypt_in_place(&nonce, &[], &mut decrypted_message)
+        .unwrap();
+
+    assert_eq!(&msg[..], &decrypted_message);
 }

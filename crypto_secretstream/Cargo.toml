@@ -14,23 +14,23 @@ repository = "https://github.com/RustCrypto/nacl-compat"
 categories = ["cryptography"]
 keywords = ["nacl", "libsodium", "public-key", "chacha20", "poly1305"]
 edition = "2021"
-rust-version = "1.60"
+rust-version = "1.85"
 
 [dependencies]
-aead = { version = "0.5", features = ["stream"] }
-chacha20 = "0.9"
-poly1305 = "0.8"
-rand_core = "0.6"
+aead = { version = "=0.6.0-rc.2", default-features = false }
+chacha20 = { version = "=0.10.0-rc.2", features = ["xchacha"] }
+poly1305 = "0.9.0-rc.2"
 subtle = { version = "2", default-features = false }
 
-[target.'cfg(target_family = "wasm")'.dependencies]
-getrandom = { version = "0.2", default-features = false, features = ["js"] }
+rand_core = { version = "0.9", optional = true }
 
 [dev-dependencies]
-rand_core = { version = "0.6", features = ["std"] }
+rand_core = { version = "0.9", features = ["std", "os_rng"] }
 
 [features]
-default = ["std"]
+default = ["std", "rand_core"]
+
 alloc = ["aead/alloc"]
-std = ["alloc", "rand_core/std", "chacha20/std", "poly1305/std"]
+std = ["alloc", "rand_core?/std"]
 heapless = ["aead/heapless"]
+rand_core = ["dep:rand_core"]

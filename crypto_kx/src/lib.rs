@@ -10,11 +10,11 @@
 //!
 //! ```rust
 //! use crypto_kx::*;
-//! use rand_core::OsRng;
+//! use rand_core::{OsRng, TryRngCore};
 //!
 //! // Each generates a key on their machine.
-//! let alice = Keypair::generate(&mut OsRng);
-//! let betty = Keypair::generate(&mut OsRng);
+//! let alice = Keypair::generate(&mut OsRng.unwrap_err());
+//! let betty = Keypair::generate(&mut OsRng.unwrap_err());
 //!
 //! // Then Alice decides to send a message to Betty, so she computes the shared keys.
 //! let alice_keys = alice.session_keys_to(betty.public());

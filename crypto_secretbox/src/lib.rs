@@ -10,17 +10,17 @@
 
 //! # Usage
 //!
-#![cfg_attr(all(feature = "getrandom", feature = "std"), doc = "```")]
-#![cfg_attr(not(all(feature = "getrandom", feature = "std")), doc = "```ignore")]
+#![cfg_attr(all(feature = "os_rng", feature = "std"), doc = "```")]
+#![cfg_attr(not(all(feature = "os_rng", feature = "std")), doc = "```ignore")]
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use crypto_secretbox::{
-//!     aead::{Aead, AeadCore, KeyInit, OsRng},
+//!     aead::{Aead, AeadCore, KeyInit, rand_core::{OsRng, TryRngCore}},
 //!     XSalsa20Poly1305, Nonce
 //! };
 //!
-//! let key = XSalsa20Poly1305::generate_key(&mut OsRng);
+//! let key = XSalsa20Poly1305::generate_key_with_rng(&mut OsRng.unwrap_err());
 //! let cipher = XSalsa20Poly1305::new(&key);
-//! let nonce = XSalsa20Poly1305::generate_nonce(&mut OsRng); // unique per message
+//! let nonce = XSalsa20Poly1305::generate_nonce_with_rng(&mut OsRng.unwrap_err()); // unique per message
 //! let ciphertext = cipher.encrypt(&nonce, b"plaintext message".as_ref())?;
 //! let plaintext = cipher.decrypt(&nonce, ciphertext.as_ref())?;
 //! assert_eq!(&plaintext, b"plaintext message");
@@ -44,22 +44,22 @@
 //! and decrypt methods:
 //!
 #![cfg_attr(
-    all(feature = "getrandom", feature = "heapless", feature = "std"),
+    all(feature = "os_rng", feature = "heapless", feature = "std"),
     doc = "```"
 )]
 #![cfg_attr(
-    not(all(feature = "getrandom", feature = "heapless", feature = "std")),
+    not(all(feature = "os_rng", feature = "heapless", feature = "std")),
     doc = "```ignore"
 )]
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use crypto_secretbox::{
-//!     aead::{AeadCore, AeadInPlace, KeyInit, OsRng, heapless::Vec},
+//!     aead::{AeadCore, AeadInPlace, KeyInit, rand_core::{OsRng, TryRngCore}, heapless::Vec},
 //!     XSalsa20Poly1305, Nonce,
 //! };
 //!
-//! let key = XSalsa20Poly1305::generate_key(&mut OsRng);
+//! let key = XSalsa20Poly1305::generate_key_with_rng(&mut OsRng.unwrap_err());
 //! let cipher = XSalsa20Poly1305::new(&key);
-//! let nonce = XSalsa20Poly1305::generate_nonce(&mut OsRng); // unique per message
+//! let nonce = XSalsa20Poly1305::generate_nonce_with_rng(&mut OsRng.unwrap_err()); // unique per message
 //!
 //! let mut buffer: Vec<u8, 128> = Vec::new(); // Note: buffer needs 16-bytes overhead for auth tag
 //! buffer.extend_from_slice(b"plaintext message");
@@ -84,13 +84,14 @@
 //! [5]: https://docs.rs/chacha20poly1305/latest/chacha20poly1305/struct.XChaCha20Poly1305.html
 //! [6]: https://tools.ietf.org/html/rfc8439
 
-pub use aead::{self, consts, AeadCore, AeadInPlace, Error, KeyInit, KeySizeUser};
+pub use aead::{self, consts, AeadCore, Error, KeyInit, KeySizeUser};
 pub use cipher;
 
 use aead::{
-    consts::{U0, U16, U24, U32, U8},
-    generic_array::GenericArray,
-    Buffer,
+    array::Array,
+    consts::{U16, U24, U32, U8},
+    inout::InOutBuf,
+    AeadInOut,
 };
 use cipher::{IvSizeUser, KeyIvInit, StreamCipher};
 use core::marker::PhantomData;
@@ -98,22 +99,26 @@ use poly1305::Poly1305;
 use zeroize::{Zeroize, Zeroizing};
 
 #[cfg(feature = "chacha20")]
-use chacha20::{hchacha, ChaCha20Legacy as ChaCha20};
+use chacha20::hchacha;
+#[cfg(feature = "chacha20")]
+type ChaCha20Legacy = cipher::StreamCipherCoreWrapper<
+    chacha20::ChaChaCore<chacha20::R20, chacha20::variants::Legacy>,
+>;
 
 #[cfg(feature = "salsa20")]
 use salsa20::{hsalsa, Salsa20};
 
-#[cfg(any(feature = "chacha20", feature = "salsa20"))]
+#[cfg(feature = "salsa20")]
 use cipher::consts::U10;
 
 /// Key type.
-pub type Key = GenericArray<u8, U32>;
+pub type Key = Array<u8, U32>;
 
 /// Nonce type.
-pub type Nonce = GenericArray<u8, U24>;
+pub type Nonce = Array<u8, U24>;
 
 /// Poly1305 tag.
-pub type Tag = GenericArray<u8, U16>;
+pub type Tag<C> = aead::Tag<SecretBox<C>>;
 
 /// `crypto_secretbox` instantiated with the XChaCha20 stream cipher.
 ///
@@ -132,7 +137,7 @@ pub type Tag = GenericArray<u8, U16>;
 /// [`draft-irtf-cfrg-xchacha`]: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-xchacha
 /// [`chacha20poly1305::XChaCha20Poly1305`]: https://docs.rs/chacha20poly1305/latest/chacha20poly1305/type.XChaCha20Poly1305.html
 #[cfg(feature = "chacha20")]
-pub type XChaCha20Poly1305 = SecretBox<ChaCha20>;
+pub type XChaCha20Poly1305 = SecretBox<ChaCha20Legacy>;
 
 /// `crypto_secretbox` instantiated with the XSalsa20 stream cipher.
 #[cfg(feature = "salsa20")]
@@ -165,9 +170,10 @@ where
 {
     /// Initialize cipher instance and Poly1305 MAC.
     fn init_cipher_and_mac(&self, nonce: &Nonce) -> (C, Poly1305) {
-        let (nonce_prefix, nonce_suffix) = nonce.split_at(16);
-        let subkey = Zeroizing::new(C::kdf(&self.key, nonce_prefix.as_ref().into()));
-        let mut cipher = C::new(&subkey, nonce_suffix.as_ref().into());
+        let (nonce_prefix, nonce_suffix) = nonce.split::<U16>();
+
+        let subkey = Zeroizing::new(C::kdf(&self.key, &nonce_prefix));
+        let mut cipher = C::new(&subkey, &nonce_suffix);
 
         // Derive Poly1305 key from the first 32-bytes of the keystream.
         let mut mac_key = Zeroizing::new(poly1305::Key::default());
@@ -204,99 +210,48 @@ impl<C> KeyInit for SecretBox<C> {
 impl<C> AeadCore for SecretBox<C> {
     type NonceSize = U24;
     type TagSize = U16;
-    type CiphertextOverhead = U0;
+    const TAG_POSITION: aead::TagPosition = aead::TagPosition::Prefix;
 }
 
-impl<C> AeadInPlace for SecretBox<C>
+impl<C> AeadInOut for SecretBox<C>
 where
     C: Kdf + KeyIvInit + KeySizeUser<KeySize = U32> + IvSizeUser<IvSize = U8> + StreamCipher,
 {
-    fn encrypt_in_place(
+    fn encrypt_inout_detached(
         &self,
         nonce: &Nonce,
         associated_data: &[u8],
-        buffer: &mut dyn Buffer,
-    ) -> Result<(), Error> {
-        let pt_len = buffer.len();
-
-        // Make room in the buffer for the tag. It needs to be prepended.
-        buffer.extend_from_slice(Tag::default().as_slice())?;
-
-        // TODO(tarcieri): add offset param to `encrypt_in_place_detached`
-        buffer.as_mut().copy_within(..pt_len, Self::TAG_SIZE);
-
-        let tag = self.encrypt_in_place_detached(
-            nonce,
-            associated_data,
-            &mut buffer.as_mut()[Self::TAG_SIZE..],
-        )?;
-
-        buffer.as_mut()[..Self::TAG_SIZE].copy_from_slice(tag.as_slice());
-        Ok(())
-    }
-
-    fn encrypt_in_place_detached(
-        &self,
-        nonce: &Nonce,
-        associated_data: &[u8],
-        buffer: &mut [u8],
-    ) -> Result<Tag, Error> {
+        mut buffer: InOutBuf<'_, '_, u8>,
+    ) -> aead::Result<Tag<C>> {
         // AAD unsupported
         if !associated_data.is_empty() {
             return Err(Error);
         }
 
         let (mut cipher, mac) = self.init_cipher_and_mac(nonce);
-        cipher.apply_keystream(buffer);
-        Ok(mac.compute_unpadded(buffer))
+        cipher.apply_keystream(buffer.get_out());
+        Ok(mac.compute_unpadded(buffer.get_out()))
     }
 
-    fn decrypt_in_place(
+    fn decrypt_inout_detached(
         &self,
         nonce: &Nonce,
         associated_data: &[u8],
-        buffer: &mut dyn Buffer,
-    ) -> Result<(), Error> {
-        if buffer.len() < Self::TAG_SIZE {
-            return Err(Error);
-        }
-
-        let tag = Tag::clone_from_slice(&buffer.as_ref()[..Self::TAG_SIZE]);
-
-        self.decrypt_in_place_detached(
-            nonce,
-            associated_data,
-            &mut buffer.as_mut()[Self::TAG_SIZE..],
-            &tag,
-        )?;
-
-        let pt_len = buffer.len() - Self::TAG_SIZE;
-
-        // TODO(tarcieri): add offset param to `encrypt_in_place_detached`
-        buffer.as_mut().copy_within(Self::TAG_SIZE.., 0);
-        buffer.truncate(pt_len);
-        Ok(())
-    }
-
-    fn decrypt_in_place_detached(
-        &self,
-        nonce: &Nonce,
-        associated_data: &[u8],
-        buffer: &mut [u8],
-        tag: &Tag,
-    ) -> Result<(), Error> {
+        mut buffer: InOutBuf<'_, '_, u8>,
+        tag: &Tag<Self>,
+    ) -> aead::Result<()> {
         // AAD unsupported
         if !associated_data.is_empty() {
             return Err(Error);
         }
 
         let (mut cipher, mac) = self.init_cipher_and_mac(nonce);
-        let expected_tag = mac.compute_unpadded(buffer);
+        let expected_tag = mac.compute_unpadded(buffer.get_out());
 
         // This performs a constant-time comparison using the `subtle` crate
         use subtle::ConstantTimeEq;
         if expected_tag.ct_eq(tag).into() {
-            cipher.apply_keystream(buffer);
+            cipher.apply_keystream(buffer.get_out());
             Ok(())
         } else {
             Err(Error)
@@ -313,28 +268,28 @@ impl<C> Drop for SecretBox<C> {
 /// Key derivation function: trait for abstracting over HSalsa20 and HChaCha20.
 pub trait Kdf {
     /// Derive a new key from the provided input key and nonce.
-    fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key;
+    fn kdf(key: &Key, nonce: &Array<u8, U16>) -> Key;
 }
 
 impl<C> Kdf for SecretBox<C>
 where
     C: Kdf,
 {
-    fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key {
+    fn kdf(key: &Key, nonce: &Array<u8, U16>) -> Key {
         C::kdf(key, nonce)
     }
 }
 
 #[cfg(feature = "chacha20")]
-impl Kdf for ChaCha20 {
-    fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key {
-        hchacha::<U10>(key, nonce)
+impl Kdf for ChaCha20Legacy {
+    fn kdf(key: &Key, nonce: &Array<u8, U16>) -> Key {
+        hchacha::<chacha20::R20>(key, nonce)
     }
 }
 
 #[cfg(feature = "salsa20")]
 impl Kdf for Salsa20 {
-    fn kdf(key: &Key, nonce: &GenericArray<u8, U16>) -> Key {
+    fn kdf(key: &Key, nonce: &Array<u8, U16>) -> Key {
         hsalsa::<U10>(key, nonce)
     }
 }

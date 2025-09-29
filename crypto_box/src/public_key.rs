@@ -5,7 +5,7 @@ use curve25519_dalek::MontgomeryPoint;
 #[cfg(feature = "seal")]
 use {
     crate::{get_seal_nonce, SalsaBox, TAG_SIZE},
-    aead::{rand_core::CryptoRngCore, Aead},
+    aead::{rand_core::CryptoRng, Aead},
     alloc::vec::Vec,
 };
 
@@ -50,7 +50,7 @@ impl PublicKey {
     #[cfg(feature = "seal")]
     pub fn seal(
         &self,
-        csprng: &mut impl CryptoRngCore,
+        csprng: &mut impl CryptoRng,
         plaintext: &[u8],
     ) -> Result<Vec<u8>, aead::Error> {
         let mut out = Vec::with_capacity(KEY_SIZE + TAG_SIZE + plaintext.len());

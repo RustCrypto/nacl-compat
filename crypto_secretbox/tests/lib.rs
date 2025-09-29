@@ -6,7 +6,7 @@
 //! XSalsa20Poly1305 test vectors adapted from NaCl's `tests/secretbox.c` and
 //! `tests/secretbox.out`.
 
-#![cfg(any(feature = "chacha20", feature = "salsa20"))]
+#![cfg(all(any(feature = "chacha20", feature = "salsa20"), feature = "alloc"))]
 
 use hex_literal::hex;
 
@@ -23,8 +23,8 @@ macro_rules! impl_tests {
     ($cipher:path, $ciphertext:expr) => {
         #[test]
         fn encrypt() {
-            let key = GenericArray::from_slice(KEY);
-            let nonce = GenericArray::from_slice(NONCE);
+            let key: &Array<_, _> = KEY.try_into().unwrap();
+            let nonce = NONCE.try_into().unwrap();
             let cipher = <$cipher>::new(key);
             let ciphertext = cipher.encrypt(nonce, PLAINTEXT).unwrap();
 
@@ -33,9 +33,9 @@ macro_rules! impl_tests {
 
         #[test]
         fn decrypt() {
-            let key = GenericArray::from_slice(KEY);
-            let nonce = GenericArray::from_slice(NONCE);
-            let cipher = <$cipher>::new(key);
+            let key: &Array<_, _> = KEY.try_into().unwrap();
+            let nonce = NONCE.try_into().unwrap();
+            let cipher = <$cipher>::new(&key);
             let plaintext = cipher.decrypt(nonce, $ciphertext).unwrap();
 
             assert_eq!(PLAINTEXT, plaintext.as_slice());
@@ -43,8 +43,8 @@ macro_rules! impl_tests {
 
         #[test]
         fn decrypt_modified() {
-            let key = GenericArray::from_slice(KEY);
-            let nonce = GenericArray::from_slice(NONCE);
+            let key = KEY.try_into().unwrap();
+            let nonce = NONCE.try_into().unwrap();
             let mut ciphertext = Vec::from($ciphertext);
 
             // Tweak the first byte
@@ -60,7 +60,7 @@ macro_rules! impl_tests {
 mod xchacha20poly1305 {
     use super::{KEY, NONCE, PLAINTEXT};
     use crypto_secretbox::{
-        aead::{generic_array::GenericArray, Aead, KeyInit},
+        aead::{array::Array, Aead, KeyInit},
         XChaCha20Poly1305,
     };
     use hex_literal::hex;
@@ -79,7 +79,7 @@ mod xchacha20poly1305 {
 mod xsalsa20poly1305 {
     use super::{KEY, NONCE, PLAINTEXT};
     use crypto_secretbox::{
-        aead::{generic_array::GenericArray, Aead, KeyInit},
+        aead::{array::Array, Aead, KeyInit},
         XSalsa20Poly1305,
     };
     use hex_literal::hex;

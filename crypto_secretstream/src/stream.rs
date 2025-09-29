@@ -1,17 +1,12 @@
 //! Core `crypto_secretstream` construction.
 
-use aead::{AeadCore, AeadInPlace, Buffer, KeyInit, Result};
+use aead::{
+    consts::{U12, U4, U8},
+    AeadCore, AeadInOut, Buffer, KeyInit, Result,
+};
 use chacha20::{
-    cipher::{
-        consts::{U10, U16},
-        generic_array::{
-            functional::FunctionalSequence,
-            sequence::{Concat, Split},
-            GenericArray,
-        },
-        KeyIvInit, StreamCipher, StreamCipherSeek,
-    },
-    hchacha, ChaCha20,
+    cipher::{array::Array, consts::U16, KeyIvInit, StreamCipher, StreamCipherSeek},
+    hchacha, ChaCha20, R20,
 };
 use core::{mem, slice};
 use poly1305::{
@@ -21,7 +16,8 @@ use poly1305::{
     },
     Poly1305,
 };
-use rand_core::{CryptoRng, RngCore};
+#[cfg(feature = "rand_core")]
+use rand_core::CryptoRng;
 use subtle::ConstantTimeEq;
 
 use super::nonce::Nonce;
@@ -47,7 +43,7 @@ impl Stream {
         let (hchacha20_nonce, nonce) = header.split();
 
         Self {
-            key: hchacha::<U10>(key.as_array(), &hchacha20_nonce),
+            key: hchacha::<R20>(key.as_array(), &hchacha20_nonce),
             nonce,
             counter: 1,
         }
@@ -69,10 +65,12 @@ impl Stream {
     }
 
     /// XOR nonce, increment counter and rekey if need be
-    fn update_state(&mut self, mac_output: GenericArray<u8, U16>, tag: Tag) -> Result<()> {
+    fn update_state(&mut self, mac_output: Array<u8, U16>, tag: Tag) -> Result<()> {
         // xor nonce
-        let (reduced_mac, _) = mac_output.split();
-        self.nonce = self.nonce.zip(reduced_mac, |l, r| l ^ r);
+        let (reduced_mac, _) = mac_output.split::<U8>();
+        for (l, r) in self.nonce.iter_mut().zip(reduced_mac) {
+            *l ^= r;
+        }
 
         // increment counter and rekey as needed
         let incremented_counter = self.counter.checked_add(1);
@@ -112,7 +110,9 @@ impl Stream {
         let chunks = ciphertext.chunks_exact(MAC_BLOCK_SIZE);
         let remaining_ciphertext = chunks.remainder();
         for block in chunks {
-            mac.update(slice::from_ref(poly1305::Block::from_slice(block)))
+            mac.update(slice::from_ref(
+                &poly1305::Block::try_from(block).expect("known size"),
+            ))
         }
 
         // compute the last blocks: remaining_ciphertext + padding error + size_block
@@ -145,8 +145,9 @@ impl Stream {
     /// Expand the nonce & counter to a valid [`chacha20::Nonce`].
     ///
     /// Used internally.
-    fn get_cipher_nonce(&self) -> chacha20::Nonce {
-        GenericArray::from(self.counter.to_le_bytes()).concat(self.nonce)
+    fn get_cipher_nonce(&self) -> Array<u8, U12> {
+        let a: Array<u8, U4> = Array::from(self.counter.to_le_bytes());
+        a.concat(self.nonce)
     }
 }
 
@@ -157,7 +158,8 @@ impl PushStream {
     /// Create a new stream for sending messages with a preshared key.
     ///
     /// The RNG is needed to generate the header.
-    pub fn init(csprng: impl RngCore + CryptoRng, key: &Key) -> (Header, Self) {
+    #[cfg(feature = "rand_core")]
+    pub fn init(csprng: impl CryptoRng, key: &Key) -> (Header, Self) {
         let header = Header::generate(csprng);
         let stream = Stream::init(key, header);
 
@@ -178,9 +180,10 @@ impl PushStream {
             .map_err(|_| aead::Error)?;
         buffer.as_mut().rotate_right(1);
 
-        let mac =
-            self.0
-                .encrypt_in_place_detached(&cipher_nonce, associated_data, buffer.as_mut())?;
+        let inout = aead::inout::InOutBuf::<u8>::from(buffer.as_mut());
+        let mac = self
+            .0
+            .encrypt_inout_detached(&cipher_nonce, associated_data, inout)?;
         buffer.extend_from_slice(&mac).map_err(|_| aead::Error)?;
 
         self.0.update_state(mac, tag)?;
@@ -205,11 +208,13 @@ impl PullStream {
         if buffer.len() < MAC_BLOCK_SIZE + 1 {
             return Err(aead::Error);
         }
-        let mac = *poly1305::Block::from_slice(&buffer.as_ref()[buffer.len() - MAC_BLOCK_SIZE..]);
+        let mac = poly1305::Block::try_from(&buffer.as_ref()[buffer.len() - MAC_BLOCK_SIZE..])
+            .expect("known size");
         buffer.truncate(buffer.len() - MAC_BLOCK_SIZE);
 
+        let inout = aead::inout::InOutBuf::<u8>::from(buffer.as_mut());
         self.0
-            .decrypt_in_place_detached(&cipher_nonce, associated_data, buffer.as_mut(), &mac)?;
+            .decrypt_inout_detached(&cipher_nonce, associated_data, inout, &mac)?;
         let tag = Tag::try_from(buffer.as_ref()[0]).map_err(|_| aead::Error)?;
         buffer.as_mut().rotate_left(1);
         buffer.truncate(buffer.len() - 1);
@@ -223,21 +228,22 @@ impl PullStream {
 impl AeadCore for Stream {
     type NonceSize = <ChaCha20 as IvSizeUser>::IvSize;
     type TagSize = <Poly1305 as BlockSizeUser>::BlockSize;
-    type CiphertextOverhead = <Poly1305 as BlockSizeUser>::BlockSize;
+
+    const TAG_POSITION: aead::TagPosition = aead::TagPosition::Postfix;
 }
 
 // here, `buffer` is understood as already containing the message's tag
-impl AeadInPlace for Stream {
-    fn encrypt_in_place_detached(
+impl AeadInOut for Stream {
+    fn encrypt_inout_detached(
         &self,
         nonce: &aead::Nonce<Self>,
         associated_data: &[u8],
-        buffer: &mut [u8],
+        mut buffer: aead::inout::InOutBuf<'_, '_, u8>,
     ) -> Result<aead::Tag<Self>> {
         if buffer.is_empty() {
             return Err(aead::Error);
         }
-        let tag = Tag::try_from(buffer[0]).map_err(|_| aead::Error)?;
+        let tag = Tag::try_from(buffer.get_out()[0]).map_err(|_| aead::Error)?;
 
         if buffer.len() as u64 > u64::MAX - (TAG_BLOCK_SIZE as u64) {
             return Err(aead::Error);
@@ -252,26 +258,27 @@ impl AeadInPlace for Stream {
         cipher
             .try_apply_keystream(&mut tag_block)
             .map_err(|_| aead::Error)?;
-        buffer[0] = tag_block[0];
+        buffer.get_out()[0] = tag_block[0];
 
         // encrypt ciphertext
         cipher.try_seek(128).map_err(|_| aead::Error)?;
         cipher
-            .try_apply_keystream(&mut buffer[1..]) // skip tag
+            .try_apply_keystream(&mut buffer.get_out()[1..]) // skip tag
             .map_err(|_| aead::Error)?;
 
         // compute and append mac
-        let mac_output = Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer[1..]);
+        let mac_output =
+            Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer.get_out()[1..]);
 
         Ok(mac_output)
     }
 
-    fn decrypt_in_place_detached(
+    fn decrypt_inout_detached(
         &self,
         nonce: &aead::Nonce<Self>,
         associated_data: &[u8],
-        buffer: &mut [u8],
-        mac: &aead::Tag<Self>,
+        mut buffer: aead::inout::InOutBuf<'_, '_, u8>,
+        tag: &aead::Tag<Self>,
     ) -> Result<()> {
         let (mut cipher, mac_key) = self.get_cipher_and_mac(nonce)?;
 
@@ -280,23 +287,24 @@ impl AeadInPlace for Stream {
             return Err(aead::Error);
         }
         let mut tag_block = [0u8; TAG_BLOCK_SIZE];
-        tag_block[0] = buffer[0];
+        tag_block[0] = buffer.get_out()[0];
         cipher.try_seek(64).map_err(|_| aead::Error)?;
         cipher
             .try_apply_keystream(&mut tag_block)
             .map_err(|_| aead::Error)?;
-        mem::swap(&mut tag_block[0], &mut buffer[0]);
+        mem::swap(&mut tag_block[0], &mut buffer.get_out()[0]);
 
         // compute mac and reject if not matching
-        let mac_output = Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer[1..]);
-        if bool::from(!mac_output.ct_eq(mac)) {
+        let mac_output =
+            Stream::compute_mac(&mac_key, associated_data, tag_block, &buffer.get_out()[1..]);
+        if bool::from(!mac_output.ct_eq(tag)) {
             return Err(aead::Error);
         }
 
         // decrypt ciphertext
         cipher.try_seek(128).map_err(|_| aead::Error)?;
         cipher
-            .try_apply_keystream(&mut buffer[1..])
+            .try_apply_keystream(&mut buffer.get_out()[1..])
             .map_err(|_| aead::Error)?;
 
         Ok(())

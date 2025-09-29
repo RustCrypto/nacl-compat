@@ -2,7 +2,7 @@
 
 use crate::{errors::InvalidLength, PublicKey};
 use curve25519_dalek::MontgomeryPoint;
-use rand_core::CryptoRngCore;
+use rand_core::CryptoRng;
 
 #[cfg(feature = "serde")]
 use serdect::serde::{de, ser, Deserialize, Serialize};
@@ -16,7 +16,7 @@ impl SecretKey {
     pub const BYTES: usize = 32;
 
     /// Generate a new random [`SecretKey`].
-    pub fn generate(csprng: &mut impl CryptoRngCore) -> Self {
+    pub fn generate(csprng: &mut impl CryptoRng) -> Self {
         let mut bytes = [0u8; Self::BYTES];
         csprng.fill_bytes(&mut bytes);
         bytes.into()
