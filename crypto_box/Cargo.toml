@@ -37,7 +37,7 @@ rand = "0.9"
 rmp-serde = "1"
 
 [features]
-default = ["alloc", "os_rng", "salsa20"]
+default = ["alloc", "os_rng", "rand_core", "salsa20"]
 alloc = ["aead/alloc"]
 std = []
 

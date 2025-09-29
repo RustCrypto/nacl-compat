@@ -33,7 +33,7 @@ salsa20 = { version = "=0.11.0-rc.1", optional = true, features = ["zeroize"] }
 hex-literal = "0.4"
 
 [features]
-default = ["alloc", "os_rng", "salsa20"]
+default = ["alloc", "os_rng", "rand_core", "salsa20"]
 alloc = ["aead/alloc"]
 std = ["alloc"]
 
