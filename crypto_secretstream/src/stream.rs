@@ -16,6 +16,7 @@ use poly1305::{
     },
     Poly1305,
 };
+#[cfg(feature = "rand_core")]
 use rand_core::CryptoRng;
 use subtle::ConstantTimeEq;
 
@@ -157,6 +158,7 @@ impl PushStream {
     /// Create a new stream for sending messages with a preshared key.
     ///
     /// The RNG is needed to generate the header.
+    #[cfg(feature = "rand_core")]
     pub fn init(csprng: impl CryptoRng, key: &Key) -> (Header, Self) {
         let header = Header::generate(csprng);
         let stream = Stream::init(key, header);

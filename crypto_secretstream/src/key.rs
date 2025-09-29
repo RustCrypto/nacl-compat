@@ -1,6 +1,7 @@
 //! `crypto_secretstream` keys.
 
 use crate::errors::InvalidLength;
+#[cfg(feature = "rand_core")]
 use rand_core::CryptoRng;
 
 /// Symmetric key used by [`crate::PushStream`] and [`crate::PullStream`].
@@ -11,6 +12,7 @@ impl Key {
     pub const BYTES: usize = 32;
 
     /// Generate a new random [`Key`].
+    #[cfg(feature = "rand_core")]
     pub fn generate(mut csprng: impl CryptoRng) -> Self {
         let mut bytes = chacha20::Key::default();
         csprng.fill_bytes(&mut bytes);
@@ -50,7 +52,7 @@ impl TryFrom<&[u8]> for Key {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "rand_core"))]
 mod tests {
     use rand_core::{OsRng, TryRngCore};
 

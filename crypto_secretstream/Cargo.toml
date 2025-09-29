@@ -17,20 +17,20 @@ edition = "2021"
 rust-version = "1.85"
 
 [dependencies]
-aead = { version = "=0.6.0-rc.2", features = [] }
+aead = { version = "=0.6.0-rc.2", default-features = false }
 chacha20 = { version = "=0.10.0-rc.2", features = ["xchacha"] }
 poly1305 = "0.9.0-rc.2"
-rand_core = "0.9"
 subtle = { version = "2", default-features = false }
 
-[target.'cfg(target_family = "wasm")'.dependencies]
-getrandom = { version = "0.3", default-features = false, features = ["wasm_js"] }
+rand_core = { version = "0.9", optional = true }
 
 [dev-dependencies]
 rand_core = { version = "0.9", features = ["std", "os_rng"] }
 
 [features]
-default = ["std"]
+default = ["std", "rand_core"]
+
 alloc = ["aead/alloc"]
-std = ["alloc", "rand_core/std"]
+std = ["alloc", "rand_core?/std"]
 heapless = ["aead/heapless"]
+rand_core = ["dep:rand_core"]

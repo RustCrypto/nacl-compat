@@ -1,3 +1,5 @@
+#![cfg(all(feature = "rand_core", feature = "std"))]
+
 use crypto_secretstream::*;
 use rand_core::OsRng;
 

@@ -5,6 +5,7 @@ use super::{
     nonce::{HChaCha20Nonce, Nonce},
 };
 use chacha20::cipher::{array::Array, consts::U24};
+#[cfg(feature = "rand_core")]
 use rand_core::CryptoRng;
 
 /// Header of the secret stream, can be sent as cleartext.
@@ -16,6 +17,7 @@ impl Header {
     pub const BYTES: usize = 24;
 
     /// Generate a new random [`Header`].
+    #[cfg(feature = "rand_core")]
     pub(super) fn generate(mut csprng: impl CryptoRng) -> Self {
         let mut bytes = Array::<u8, U24>::default();
         csprng.fill_bytes(&mut bytes);
@@ -56,7 +58,7 @@ impl TryFrom<&[u8]> for Header {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "rand_core"))]
 mod tests {
     use rand_core::{OsRng, TryRngCore};
 

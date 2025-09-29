@@ -7,7 +7,8 @@
 
 //! ## Usage
 //!
-//! ```rust
+#![cfg_attr(all(feature = "rand_core", feature = "std"), doc = "```")]
+#![cfg_attr(not(all(feature = "rand_core", feature = "std")), doc = "```ignore")]
 //! use crypto_secretstream::*;
 //! use rand_core::{OsRng, TryRngCore};
 //!
