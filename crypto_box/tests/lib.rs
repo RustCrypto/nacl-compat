@@ -9,6 +9,7 @@
     feature = "std"
 ))]
 
+use aead::AeadCore;
 use crypto_box::{
     aead::{array::Array, inout::InOutBuf, Aead, AeadInOut},
     PublicKey, SecretKey,
@@ -247,4 +248,54 @@ fn seal() {
     let sk = SecretKey::from(SEAL_SECRET_KEY);
     assert_eq!(SEAL_PLAINTEXT, sk.unseal(&encrypted).unwrap());
     assert_eq!(SEAL_PLAINTEXT, sk.unseal(SEAL_CIPHERTEXT).unwrap());
+}
+
+#[cfg(feature = "seal")]
+#[test]
+fn test_seal_regression() {
+    let mut rng = rand::rng();
+    let key_a = ed25519_dalek::SigningKey::generate(&mut rng);
+    let key_b = ed25519_dalek::SigningKey::generate(&mut rng);
+
+    println!("a -> a");
+    seal_open_roundtrip(&key_a, &key_a);
+    println!("b -> b");
+    seal_open_roundtrip(&key_b, &key_b);
+
+    println!("a -> b");
+    seal_open_roundtrip(&key_a, &key_b);
+    println!("b -> a");
+    seal_open_roundtrip(&key_b, &key_a);
+}
+
+fn seal_open_roundtrip(this: &ed25519_dalek::SigningKey, other: &ed25519_dalek::SigningKey) {
+    let msg = b"super secret message!!!!".to_vec();
+    let nonce = crypto_box::ChaChaBox::try_generate_nonce_with_rng(&mut rand::rngs::OsRng)
+        .expect("not enough randomness");
+
+    let shared_a = {
+        let secret_key = crypto_box::SecretKey::from(this.to_scalar());
+        let public_key = crypto_box::PublicKey::from(other.verifying_key().to_montgomery());
+
+        crypto_box::ChaChaBox::new(&public_key, &secret_key)
+    };
+
+    let mut sealed_message = msg.clone();
+    shared_a
+        .encrypt_in_place(&nonce, &[], &mut sealed_message)
+        .expect("encryption failed");
+
+    let shared_b = {
+        let secret_key = crypto_box::SecretKey::from(other.to_scalar());
+        let public_key = crypto_box::PublicKey::from(this.verifying_key().to_montgomery());
+
+        crypto_box::ChaChaBox::new(&public_key, &secret_key)
+    };
+    let mut decrypted_message = sealed_message.clone();
+
+    shared_b
+        .decrypt_in_place(&nonce, &[], &mut decrypted_message)
+        .unwrap();
+
+    assert_eq!(&msg[..], &decrypted_message);
 }

@@ -35,6 +35,7 @@ bincode = "1"
 hex-literal = "0.4"
 rand = "0.9"
 rmp-serde = "1"
+ed25519-dalek = { version = "3.0.0-pre.1", features = ["rand_core"] }
 
 [features]
 default = ["alloc", "os_rng", "rand_core", "salsa20"]
