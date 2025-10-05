@@ -1,6 +1,6 @@
 [package]
 name = "crypto_secretbox"
-version = "0.1.1"
+version = "0.2.0-pre"
 description = """
 Pure Rust implementation of the XSalsa20Poly1305 (a.k.a. NaCl crypto_secretbox)
 authenticated encryption cipher as well as the libsodium variant of

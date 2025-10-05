@@ -201,7 +201,7 @@ dependencies = [
 
 [[package]]
 name = "crypto_box"
-version = "0.9.1"
+version = "0.10.0-pre"
 dependencies = [
  "aead",
  "bincode",
@@ -221,7 +221,7 @@ dependencies = [
 
 [[package]]
 name = "crypto_kx"
-version = "0.2.1"
+version = "0.3.0-pre"
 dependencies = [
  "blake2",
  "curve25519-dalek",
@@ -231,7 +231,7 @@ dependencies = [
 
 [[package]]
 name = "crypto_secretbox"
-version = "0.1.1"
+version = "0.2.0-pre"
 dependencies = [
  "aead",
  "chacha20",
@@ -246,7 +246,7 @@ dependencies = [
 
 [[package]]
 name = "crypto_secretstream"
-version = "0.2.0"
+version = "0.3.0-pre"
 dependencies = [
  "aead",
  "chacha20",
