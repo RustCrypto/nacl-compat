@@ -257,12 +257,12 @@ impl<C> CryptoBox<C> {
     /// Create a new [`CryptoBox`], performing X25519 Diffie-Hellman to derive
     /// a shared secret from the provided public and secret keys.
     ///
-    /// Assumes that the scalar has alread been clamped. Eg like `ed25519-dalek` does.
-    pub fn from_clamped(public_key: &PublicKey, secret_key: &SecretKey) -> Self
+    /// Internally performs clamping.
+    pub fn new(public_key: &PublicKey, secret_key: &SecretKey) -> Self
     where
         C: Kdf,
     {
-        let shared_secret = Zeroizing::new(public_key.0 * secret_key.scalar);
+        let shared_secret = Zeroizing::new(public_key.0.mul_clamped(secret_key.bytes));
 
         // Use HChaCha20 to create a uniformly random key from the shared secret
         let key = Zeroizing::new(C::kdf((&shared_secret.0).into(), &Array::default()));
@@ -275,12 +275,12 @@ impl<C> CryptoBox<C> {
     /// Create a new [`CryptoBox`], performing X25519 Diffie-Hellman to derive
     /// a shared secret from the provided public and secret keys.
     ///
-    /// Internally performs clamping.
-    pub fn new(public_key: &PublicKey, secret_key: &SecretKey) -> Self
+    /// Assumes that the scalar has alread been clamped. Eg like `ed25519-dalek` does.
+    pub fn new_from_clamped(public_key: &PublicKey, secret_key: &SecretKey) -> Self
     where
         C: Kdf,
     {
-        let shared_secret = Zeroizing::new(public_key.0.mul_clamped(secret_key.bytes));
+        let shared_secret = Zeroizing::new(public_key.0 * secret_key.scalar);
 
         // Use HChaCha20 to create a uniformly random key from the shared secret
         let key = Zeroizing::new(C::kdf((&shared_secret.0).into(), &Array::default()));
