@@ -29,8 +29,11 @@ rand_core = { version = "0.9", features = ["std", "os_rng"] }
 
 [features]
 default = ["std", "rand_core"]
-
 alloc = ["aead/alloc"]
 std = ["alloc", "rand_core?/std"]
+
 heapless = ["aead/heapless"]
 rand_core = ["dep:rand_core"]
+
+[package.metadata.docs.rs]
+all-features = true

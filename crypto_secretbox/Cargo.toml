@@ -43,4 +43,3 @@ os_rng = ["aead/os_rng"]
 
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
