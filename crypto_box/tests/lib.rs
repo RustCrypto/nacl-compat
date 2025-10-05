@@ -279,7 +279,7 @@ fn seal_open_roundtrip(this: &ed25519_dalek::SigningKey, other: &ed25519_dalek::
         let secret_key = crypto_box::SecretKey::from(this.to_scalar());
         let public_key = crypto_box::PublicKey::from(other.verifying_key().to_montgomery());
 
-        crypto_box::ChaChaBox::from_clamped(&public_key, &secret_key)
+        crypto_box::ChaChaBox::new_from_clamped(&public_key, &secret_key)
     };
 
     let mut sealed_message = msg.clone();
@@ -291,7 +291,7 @@ fn seal_open_roundtrip(this: &ed25519_dalek::SigningKey, other: &ed25519_dalek::
         let secret_key = crypto_box::SecretKey::from(other.to_scalar());
         let public_key = crypto_box::PublicKey::from(this.verifying_key().to_montgomery());
 
-        crypto_box::ChaChaBox::from_clamped(&public_key, &secret_key)
+        crypto_box::ChaChaBox::new_from_clamped(&public_key, &secret_key)
     };
     let mut decrypted_message = sealed_message.clone();
 
