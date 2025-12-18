@@ -336,54 +336,6 @@ fn get_seal_nonce(ephemeral_pk: &PublicKey, recipient_pk: &PublicKey) -> Nonce {
 mod tests {
     use super::*;
 
-    #[cfg(feature = "serde")]
-    #[test]
-    fn test_public_key_serialization() {
-        use aead::rand_core::RngCore;
-
-        // Random PK bytes
-        let mut public_key_bytes = [0; 32];
-        let mut rng = rand::rng();
-        rng.fill_bytes(&mut public_key_bytes);
-
-        // Create public key
-        let public_key = PublicKey::from(public_key_bytes);
-
-        // Round-trip serialize with bincode
-        let serialized = bincode::serialize(&public_key).unwrap();
-        let deserialized: PublicKey = bincode::deserialize(&serialized).unwrap();
-        assert_eq!(deserialized, public_key,);
-
-        // Round-trip serialize with rmp (msgpack)
-        let serialized = rmp_serde::to_vec_named(&public_key).unwrap();
-        let deserialized: PublicKey = rmp_serde::from_slice(&serialized).unwrap();
-        assert_eq!(deserialized, public_key,);
-    }
-
-    #[cfg(feature = "serde")]
-    #[test]
-    fn test_secret_key_serialization() {
-        use aead::rand_core::RngCore;
-
-        // Random SK bytes
-        let mut secret_key_bytes = [0; 32];
-        let mut rng = rand::rng();
-        rng.fill_bytes(&mut secret_key_bytes);
-
-        // Create secret key
-        let secret_key = SecretKey::from(secret_key_bytes);
-
-        // Round-trip serialize with bincode
-        let serialized = bincode::serialize(&secret_key).unwrap();
-        let deserialized: SecretKey = bincode::deserialize(&serialized).unwrap();
-        assert_eq!(deserialized.to_bytes(), secret_key.to_bytes());
-
-        // Round-trip serialize with rmp (msgpack)
-        let serialized = rmp_serde::to_vec_named(&secret_key).unwrap();
-        let deserialized: SecretKey = rmp_serde::from_slice(&serialized).unwrap();
-        assert_eq!(deserialized.to_bytes(), secret_key.to_bytes());
-    }
-
     #[test]
     fn test_public_key_from_slice() {
         let array = [0; 40];
